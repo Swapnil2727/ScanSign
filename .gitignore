@@ -1,15 +1,40 @@
+# ──── Build outputs ────────────────────────────────────────────────────────────
+**/build/
+/captures/
+
+# ──── Gradle ───────────────────────────────────────────────────────────────────
+.gradle/
+!gradle/wrapper/gradle-wrapper.jar
+
+# ──── IntelliJ / Android Studio ────────────────────────────────────────────────
 *.iml
-.gradle
-/local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
-.DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
+.idea/caches/
+.idea/libraries/
+.idea/modules.xml
+.idea/workspace.xml
+.idea/navEditor.xml
+.idea/assetWizardSettings.xml
+.idea/deploymentTargetDropDown.xml
+.idea/deploymentTargetSelector.xml
+.idea/.gitignore
+
+# ──── Local machine config (never commit) ──────────────────────────────────────
 local.properties
+keystore.properties
+
+# ──── Signing keys ─────────────────────────────────────────────────────────────
+*.jks
+*.keystore
+
+# ──── Firebase (contains API keys) ────────────────────────────────────────────
+google-services.json
+
+# ──── Native build artifacts ────────────────────────────────────────────────────
+.externalNativeBuild/
+.cxx/
+
+# ──── Kotlin ───────────────────────────────────────────────────────────────────
+.kotlin/
+
+# ──── macOS ────────────────────────────────────────────────────────────────────
+.DS_Store

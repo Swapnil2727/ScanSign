@@ -1,1 +1,7 @@
 /build
+
+# ProGuard mapping files contain class/method names and should not be public
+/release/
+mapping.txt
+seeds.txt
+usage.txt
