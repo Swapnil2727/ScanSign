@@ -38,9 +38,9 @@ android {
 }
 
 dependencies {
-    implementation(project(":core:model"))
-    implementation(project(":core:di"))
-    implementation(project(":core:ui")) // Compose BOM + Material3 exposed transitively
+    implementation(projects.core.model)
+    implementation(projects.core.di)
+    implementation(projects.core.ui) // Compose BOM + Material3 exposed transitively
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
