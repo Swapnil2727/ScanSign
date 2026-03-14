@@ -23,3 +23,4 @@ rootProject.name = "ScanSign"
 include(":app")
 include(":core:model")
 include(":core:di")
+include(":core:ui")

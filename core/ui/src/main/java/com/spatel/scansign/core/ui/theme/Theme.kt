@@ -1,4 +1,4 @@
-package com.spatel.scansign.ui.theme
+package com.spatel.scansign.core.ui.theme
 
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -34,7 +34,7 @@ private val LightColorScheme = lightColorScheme(
     error = md_theme_light_error,
     onError = md_theme_light_onError,
     errorContainer = md_theme_light_errorContainer,
-    onErrorContainer = md_theme_light_onErrorContainer
+    onErrorContainer = md_theme_light_onErrorContainer,
 )
 
 private val DarkColorScheme = darkColorScheme(
@@ -61,14 +61,14 @@ private val DarkColorScheme = darkColorScheme(
     error = md_theme_dark_error,
     onError = md_theme_dark_onError,
     errorContainer = md_theme_dark_errorContainer,
-    onErrorContainer = md_theme_dark_onErrorContainer
+    onErrorContainer = md_theme_dark_onErrorContainer,
 )
 
 @Composable
 fun ScanSignTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     dynamicColor: Boolean = true,
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
 ) {
     val colorScheme = when {
         dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
@@ -82,6 +82,6 @@ fun ScanSignTheme(
     MaterialTheme(
         colorScheme = colorScheme,
         typography = Typography,
-        content = content
+        content = content,
     )
 }

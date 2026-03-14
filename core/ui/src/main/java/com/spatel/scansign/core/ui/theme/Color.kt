@@ -1,4 +1,4 @@
-package com.spatel.scansign.ui.theme
+package com.spatel.scansign.core.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
@@ -54,7 +54,7 @@ val md_theme_dark_onError = Color(0xFF690005)
 val md_theme_dark_errorContainer = Color(0xFF93000A)
 val md_theme_dark_onErrorContainer = Color(0xFFFFDAD6)
 
-// Semantic Colors (for direct use in composables)
+// Semantic brand colors — use directly in composables
 val ScanSignBlue = Color(0xFF1565C0)
 val ScanSignTeal = Color(0xFF00897B)
 val ScanSignAmber = Color(0xFFFFA000)
