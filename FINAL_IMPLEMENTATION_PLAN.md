@@ -2,21 +2,17 @@
 
 **Timeline**: 15 weeks (Android MVP)
 **Team**: 1 developer with access to Claude Code Pro
+**Distribution**: Google Play Store — commercial app, ad-supported via AdMob
 
 ---
 
 ## Strategy: Two-Phase Delivery
 
-**Phase 1 (Weeks 1–9): PDF Scanner MVP**
-Build a fully functional, shippable PDF scanner app. Capture documents with the camera, generate PDFs, manage them locally, and share them. This phase ships as a standalone useful app.
+**Phase 1 (Weeks 1–8): PDF Scanner MVP**
+Build a fully functional, shippable PDF scanner app. Use ML Kit Document Scanner for capture (edge detection, perspective correction, multi-page, PDF output — all built-in). Manage documents locally and share them. AdMob ads live from day one.
 
-**Phase 2 (Weeks 10–15): Signing Capabilities**
+**Phase 2 (Weeks 9–15): Signing Capabilities**
 Layer digital, drawn, and image signatures on top of the completed PDF scanner. Signing is additive — the core scanner app is not disrupted.
-
-This order means:
-- Real users can get value from Phase 1 before Phase 2 is built
-- The signing module is built against a stable, tested document foundation
-- Scope risk is isolated: if signing takes longer, Phase 1 is already shippable
 
 ---
 
@@ -31,24 +27,33 @@ This order means:
 Feature-based modules with layer separation:
 - `:feature:scanner`, `:feature:documents`, `:feature:settings` (Phase 1)
 - `:feature:signer` (Phase 2)
-- `:core:ui`, `:core:database`, `:core:camera`, `:core:pdf`, `:core:signing`, `:core:di`, `:core:model`
+- `:core:ui`, `:core:database`, `:core:pdf`, `:core:signing`, `:core:ads`, `:core:di`, `:core:model`
+- No `:core:camera` — ML Kit Document Scanner replaces it entirely
 - Features have no cross-dependencies; use navigation for communication
 
 ---
 
 ## Tech Stack
 
-| Component | Choice | Reason |
-|-----------|--------|--------|
-| DI | Koin 4.0+ | KMP-ready, no code generation |
-| UI | Jetpack Compose | Modern, state management friendly |
-| Navigation | Navigation 3 (`navigation3-runtime/ui`) | Back-stack first, type-safe `@Serializable` routes, no NavController |
-| Database | Room + SQLite | Type-safe, migration support |
-| Async | Coroutines + Flow | Native Kotlin, KMP compatible |
-| Camera | CameraX | Modern, handles device variations |
-| PDF | Android PdfDocument / iText | PDF generation from images |
-| Signing | Android Keystore | Native, secure private key storage |
-| Serialization | Kotlin Serialization | Route keys, DataStore preferences |
+| Component | Choice | Licence | Reason |
+|-----------|--------|---------|--------|
+| DI | Koin 4.0+ | Apache 2.0 | KMP-ready, no code generation |
+| UI | Jetpack Compose | Apache 2.0 | Modern, state management friendly |
+| Navigation | Navigation 3 | Apache 2.0 | Back-stack first, type-safe `@Serializable` routes |
+| Database | Room + SQLite | Apache 2.0 | Type-safe, migration support |
+| Async | Coroutines + Flow | Apache 2.0 | Native Kotlin, KMP compatible |
+| Document Scanning | ML Kit Document Scanner | Apache 2.0 / GMS | Edge detection, perspective correction, multi-page, direct PDF output |
+| PDF Manipulation | **Apache PDFBox Android** | **Apache 2.0** | Open existing PDFs and embed signatures — free for commercial use |
+| Signing | Android Keystore | Built-in | Native, secure private key storage |
+| Serialization | Kotlin Serialization | Apache 2.0 | Route keys, DataStore preferences |
+| Ads | Google AdMob | N/A | Banner + interstitial, primary revenue source |
+
+> **PDF Library Decision — Apache PDFBox Android (final, not up for re-evaluation)**
+>
+> Three options were considered:
+> - `Android PdfDocument` (built-in) — **rejected**: can only *create* PDFs from scratch, cannot open and modify an existing PDF. Useless for embedding signatures into scanned documents.
+> - `iText 7` — **rejected**: AGPL licence. Distributing a closed-source commercial Play Store app requires a paid commercial licence. Not viable.
+> - **`Apache PDFBox Android` (Apache 2.0)** — **chosen**: can open, read, modify, and save existing PDFs. Free for commercial use. Widely used in open-source PDF signing apps. This is the library we use for embedding signatures in Phase 2. `:core:pdf` is built around it from Week 3.
 
 ---
 
@@ -65,12 +70,10 @@ Feature-based modules with layer separation:
 **1.1 Project Setup**
 - Create modular project structure with type-safe project accessors
 - Configure Gradle with version catalog (`libs.versions.toml`)
-- Set up build conventions
 
 **1.2 Koin DI Framework**
 - Initialize Koin in Application class
-- Create `:core:di` module
-- Define AppModule, DatabaseModule (shell)
+- Create `:core:di` module — AppModule, DatabaseModule (shell)
 
 **1.3 Core Models**
 - Define `Document`, `DocumentPage`, `Signature` domain models
@@ -81,35 +84,35 @@ Feature-based modules with layer separation:
 ### Week 2: Core Infrastructure ✅
 
 **2.1 Core UI Module** ✅
-- Create `:core:ui` library; expose Compose + Material3 transitively via `api()`
-- Move theme (Color, Theme, Type) out of `:app`
-- Add `ScanSignSpacing` tokens and `@ThemePreviews` annotation
+- `:core:ui` library — Compose + Material3 exposed via `api()`
+- `ScanSignSpacing` tokens, `@ThemePreviews` annotation
 
 **2.2 Navigation 3** ✅
-- Add Navigation 3 dependencies
-- Define `@Serializable` route objects: `DocumentsRoute`, `ScannerRoute`, `SignerRoute`, `SettingsRoute`, `DocumentDetailRoute`
-- `AppNavigation`: single `Scaffold` + `NavDisplay` driven by `SnapshotStateList` back stack
-- Bottom bar with FAB-style centre Scan button; selected state from `backStack.last()`
+- `@Serializable` route objects: `DocumentsRoute`, `ScannerRoute`, `SignerRoute`, `SettingsRoute`, `DocumentDetailRoute`
+- `AppNavigation`: single `Scaffold` + `NavDisplay` + `SnapshotStateList` back stack
+- Bottom bar with FAB-style centre Scan button
 - Placeholder screens for all destinations
 
 **2.3 Room Database** ← deferred to Week 4
-> Intentionally deferred. Room will be introduced alongside the Scanner feature
-> so entities and DAOs are shaped by real usage, not assumptions.
+> Intentionally deferred — entities shaped by real Scanner usage, not assumptions.
 
 ---
 
-### Week 3: Core Modules — Camera + PDF
+### Week 3: ML Kit Document Scanner + core:pdf
 
-**3.1 Camera Module (`:core:camera`)**
-- Wrap CameraX with a clean, lifecycle-safe API
-- `CameraPreview` composable (no business logic)
-- Camera permission handling utility
-- Capture callback that returns an image file path
+**3.1 ML Kit Document Scanner Integration**
+- Add `play-services-mlkit-document-scanner` dependency
+- Configure `GmsDocumentScannerOptions` (multi-page, JPEG + PDF output, gallery import)
+- Replace placeholder `ScannerScreen` with ML Kit launcher + result handling
+- Extract PDF `Uri` and page image `Uri` list from scanner result
+- Navigate to confirm screen on success
 
-**3.2 PDF Module (`:core:pdf`)**
-- Evaluate Android `PdfDocument` vs iText for image-to-PDF quality
-- `PdfGenerator`: accepts a list of image paths, returns a PDF file
-- Handle page size, compression, and basic metadata (title, creation date)
+**3.2 Core PDF Module (`:core:pdf`)**
+- Add `Apache PDFBox Android` dependency (Apache 2.0 — commercially safe)
+- `PdfCopier`: copy ML Kit's content-`Uri` PDF into app-internal storage as a permanent file
+- `PdfMetadata`: read page count and file size from a PDF using PDFBox
+- `PdfPageRenderer`: render a PDF page to a `Bitmap` for thumbnail generation
+- Keep this module thin in Phase 1 — it grows in Phase 2 when `PdfSigner` is added
 
 ---
 
@@ -117,100 +120,87 @@ Feature-based modules with layer separation:
 
 **4.1 Room Database (`:core:database`)**
 - `ScanSignDatabase` Room DB version 1
-- `DocumentEntity`, `DocumentPageEntity` (no `SignatureEntity` yet — Phase 2)
-- `DocumentDao`: insert, getAll, getById, delete
-- `LocalDocumentDataSource`
+- `DocumentEntity` (id, title, pdfPath, thumbnailPath, pageCount, fileSize, status, createdAt, updatedAt)
+- `DocumentPageEntity` (id, documentId, pageNumber, imagePath, rotation)
+- `DocumentDao`: insert, getAll (Flow), getById, delete, updateTitle
+- No `SignatureEntity` yet — added in Phase 2 as migration version 2
 
 **4.2 Scanner Domain**
 - `DocumentRepository` interface
-- `CaptureDocumentUseCase`: image path → save pages → generate PDF → persist
-- `GetDocumentsUseCase`, `DeleteDocumentUseCase`
-- Input validation in use cases
+- `SaveScannedDocumentUseCase`: ML Kit result → copy files to internal storage → generate thumbnail → persist to Room
+- `DeleteDocumentUseCase`: delete Room row + files from disk
+- Pure Kotlin domain — no Android or Koin imports
 
-**4.3 Scanner Data**
-- `DocumentRepositoryImpl` backed by Room + file storage
+**4.3 Scanner Data Layer**
+- `DocumentRepositoryImpl` backed by Room + `FileManager`
 - Wire `DatabaseModule` in `:core:di`
 
 ---
 
-### Week 5: Scanner Feature — UI
+### Week 5: Documents Feature
 
-**5.1 Scanner Screen**
-- Replace placeholder with real CameraX preview from `:core:camera`
-- `ScannerViewModel`: manage capture state with StateFlow
-- Multi-page capture flow (capture → review page → add more or finish)
+**5.1 Documents Domain**
+- `GetDocumentsUseCase`: returns `Flow<List<Document>>` — reactive, auto-updates on change
+- `SearchDocumentsUseCase`: filter by title
+- `ShareDocumentUseCase`: via Android `FileProvider` intent
+- `RenameDocumentUseCase`
 
-**5.2 Document Editor**
-- Per-page review: rotation, retake
-- Page reorder before saving
-- "Save as PDF" triggers `CaptureDocumentUseCase`
-- Navigate to Documents list on success
-
----
-
-### Week 6: Documents Feature
-
-**6.1 Documents Domain**
-- `GetDocumentsUseCase` with search/filter support
-- `ShareDocumentUseCase` via Android `FileProvider` intent
-- `DeleteDocumentUseCase` (file + DB row)
-
-**6.2 Documents UI**
-- Replace placeholder `DocumentsScreen` with real list backed by Room Flow
+**5.2 Documents UI**
+- Replace placeholder `DocumentsScreen` — real list from Room `Flow` via ViewModel
 - Search bar with live filtering
-- Document detail screen: PDF viewer + metadata
-- Swipe-to-delete and share action
+- Document detail screen: PDF viewer (PDFBox page renderer) + metadata
+- Swipe-to-delete with undo snackbar, share action, rename via bottom sheet
 
 ---
 
-### Week 7: Settings + Phase 1 Polish
+### Week 6: Settings
 
-**7.1 Settings Feature**
+**6.1 Settings Feature**
 - Replace placeholder `SettingsScreen`
-- User preferences via DataStore: default PDF quality, app theme override
-- Storage usage display (total PDFs, disk used)
-- App info (version, privacy policy link)
-
-**7.2 Phase 1 Polish**
-- Edge-to-edge polish across all screens
-- Empty states (no documents yet)
-- Error states (camera permission denied, storage full)
-- Loading indicators
+- DataStore preferences: app theme override, default scan quality
+- Storage usage display (total documents, disk used)
+- App info (version, open-source licences, privacy policy)
 
 ---
 
-### Week 8: Testing — Phase 1
+### Week 7: Phase 1 Polish + Testing
 
-**8.1 Unit Tests**
-- Test all Phase 1 use cases with fake repositories
-- Test `PdfGenerator` with sample images
+**7.1 Polish**
+- Edge-to-edge on all screens
+- Empty states: no documents yet, first-time user onboarding
+- Error states: ML Kit unavailable, storage full, permission denied
+- Loading indicators and screen transitions
+
+**7.2 Unit Tests**
+- All Phase 1 use cases with fake repositories (no mocks)
+- `PdfCopier`, `PdfMetadata`, `PdfPageRenderer`
 - Target: 100% domain layer coverage
 
-**8.2 ViewModel + Integration Tests**
-- Test `ScannerViewModel` and `DocumentsViewModel` with fake use cases
-- Integration test: full scan → save → list → delete flow with real Room (in-memory)
-- Test navigation flows
+**7.3 ViewModel + Integration Tests**
+- `ScannerViewModel`, `DocumentsViewModel` with fake use cases
+- Integration test: scan result → save → list → delete with in-memory Room
+- Navigation flow tests
 
-**8.3 Performance**
-- Profile cold start (target: < 2 seconds)
-- Optimize Room queries with indices on `createdAt`, `title`
-- Lazy-load thumbnails in document list
-- Benchmark image compression settings
+**7.4 Performance**
+- Cold start target: < 2 seconds
+- Room indices on `createdAt`, `title`
+- Thumbnail lazy-loading in document list
 
 ---
 
-### Week 9: Phase 1 Release
+### Week 8: Phase 1 Release
 
-**9.1 Play Store Preparation**
-- Generate signed AAB
-- Write store listing copy and screenshots (scanner-focused)
-- Create privacy policy (local storage only, no data leaves device)
-- Set up Google Play Console
+**8.1 Play Store Preparation**
+- Generate signed AAB with release keystore
+- Store listing: title, description, screenshots (scanner-focused)
+- Privacy policy (local storage only, no data leaves device)
+- AdMob app ID registered, production ad unit IDs configured
+- Google Play Console setup, content rating questionnaire
 
-**9.2 Beta Release**
-- Internal testing on 3+ real devices
-- Monitor crashes with Firebase Crashlytics (crash reporting only)
-- Fix critical issues before promoting to production
+**8.2 Beta → Public**
+- Internal testing track on 3+ real devices
+- Firebase Crashlytics (crash reporting only, no analytics sync)
+- Fix critical issues, promote to production
 
 ---
 
@@ -218,115 +208,122 @@ Feature-based modules with layer separation:
 
 ---
 
-### Week 10: Core Signing Module (`:core:signing`)
+### Week 9: Core Signing Module (`:core:signing`) + PDF Signing Infrastructure
 
-**10.1 Android Keystore Wrapper**
+**9.1 Android Keystore Wrapper**
 - `KeystoreManager`: generate RSA key pair, retrieve, delete
-- Certificate self-signed generation (for digital signatures)
-- `SignatureEntity` added to Room DB (migration version 2)
+- Self-signed X.509 certificate generation
+- `SignatureEntity` added to Room — migration version 2
 - `SignatureDao`: insert, getAll, delete
 
-**10.2 Sign Document Use Case**
-- `SignDocumentUseCase`: embed signature into existing PDF
-- Support three signature types: drawn bitmap, image file, digital certificate
-- `VerifySignatureUseCase`: validate digital signature on a PDF
+**9.2 PDF Signing via PDFBox**
+- `PdfSigner` in `:core:pdf`: open existing PDF, embed signature (bitmap or digital cert) at given coordinates, save
+- `PdfVerifier`: validate digital signature embedded in a PDF
+- `SignDocumentUseCase`, `VerifySignatureUseCase`
 
 ---
 
-### Week 11: Signing Feature UI
+### Week 10: Signing Feature UI
 
-**11.1 Signing Screen**
+**10.1 Signing Screen**
 - Replace placeholder `SignerScreen`
 - Three tabs: Draw, Image, Digital
-- Draw tab: canvas with pressure-sensitive stroke, clear + save
-- Image tab: photo picker or gallery pick, crop to signature shape
-- Digital tab: select or create a key pair, show certificate details
+- **Draw**: canvas with stroke input, pressure simulation, undo, clear, save as bitmap
+- **Image**: photo picker / gallery, crop to signature bounds
+- **Digital**: create or select existing Keystore key pair, display certificate details
 
-**11.2 PDF Signing Flow**
-- Entry point: long-press a document → "Sign" action
-- Signature placement overlay on PDF preview (drag to position)
-- Confirm → `SignDocumentUseCase` → update document status to `SIGNED`
+**10.2 PDF Signing Flow**
+- Entry point: document detail → "Sign" action
+- Signature placement overlay on PDF page preview (drag, scale, reposition)
+- Confirm → `SignDocumentUseCase` → document status → `SIGNED`
+- Interstitial ad shown on signing completion
 
 ---
 
-### Week 12: Signing Tests + Integration
+### Week 11: Signing Tests + Integration
 
-**12.1 Signing Tests**
-- Unit test `SignDocumentUseCase` and `VerifySignatureUseCase`
-- Test Keystore operations on emulator and real device
-- Integration test: scan → sign → verify end-to-end
+**11.1 Signing Tests**
+- Unit test `SignDocumentUseCase`, `VerifySignatureUseCase` with fakes
+- Keystore tests on emulator + real device
+- PDFBox signing round-trip test (sign → verify → assert valid)
 
-**12.2 Full App Integration**
-- End-to-end test: scan → documents list → sign → verify → share
-- Navigation regression test (all routes)
+**11.2 Full App Regression**
+- End-to-end: scan → list → sign → verify → share
+- Navigation regression across all routes
+
+---
+
+### Week 12: AdMob Integration (`:core:ads`)
+
+**12.1 AdMob Setup**
+- Add Google Mobile Ads SDK dependency
+- `AdManager` singleton injectable via Koin — single source of truth for ad state
+- Banner ad composable (`AdBanner`) placed in document list and settings screens
+- Interstitial ad shown after a successful scan and after a successful signing operation
+- Use test ad unit IDs in debug builds, production IDs in release builds via `BuildConfig`
+- GDPR/CCPA consent flow using UMP (User Messaging Platform) SDK — required for EU users and Play Store compliance
 
 ---
 
 ### Week 13: Performance + Final Polish
 
 **13.1 Performance**
-- Profile signing operation (target: < 3 seconds for a 10-page PDF)
-- Memory profiling during multi-page capture
-- Final Room query optimisation pass
+- Signing target: < 3 seconds for a 10-page PDF
+- Memory profiling during PDF manipulation
+- Final Room query pass
 
-**13.2 Final Polish**
-- Accessibility audit (content descriptions, touch targets)
+**12.2 Polish**
+- Accessibility audit (content descriptions, 48dp touch targets)
 - Dark/light theme audit on all screens
-- Tablet layout check (Navigation 3 adaptive layout if needed)
+- Tablet layout review
 
 ---
 
 ### Week 14–15: Phase 2 Release
 
-**14.1 Play Store Update**
-- Update store listing to highlight signing capabilities
-- New screenshots showing signing flow
-- Bump `versionCode` and `versionName`
+**13.1 Play Store Update**
+- Update listing to highlight signing
+- New screenshots of signing flow
+- Bump `versionCode` + `versionName`
 
-**14.2 Beta + Public Release**
+**13.2 Beta → Public**
 - Beta on existing Phase 1 users
-- Address feedback
-- Promote to production
-
----
-
-## Optional: Ad Integration (Post-Launch)
-
-**Setup**: `:core:ads` module, Google Mobile Ads SDK, `AdManager` via Koin
-**Placement**: Banner in document list + settings; interstitial after scan or sign
-**Effort**: 2–3 weeks post-launch, zero impact on core codebase
+- Address feedback, promote to production
 
 ---
 
 ## Key Decisions
 
-- **Two-phase delivery**: PDF Scanner ships first; Signing is additive in Phase 2
-- **Room deferred to Week 4**: Built alongside the first feature that uses it — entities shaped by real queries, not assumptions
-- **Navigation 3**: Type-safe `@Serializable` routes + `NavDisplay` + `SnapshotStateList` back stack; no `NavController`
-- **Local-first, no cloud sync**: All data stays on device; no Firebase Storage, no Retrofit
-- **No Hilt**: Koin chosen for future KMP compatibility
-- **No Room schema export**: Migrations tracked manually in a changelog
-- **Domain layer stays pure**: No Android or Koin imports in use cases
-- **No mocks in tests**: Fake repository implementations instead of Mockito
-- **Kotlin Serialization**: Route keys + DataStore preferences; no JSON API needed
+- **ML Kit Document Scanner over CameraX**: Eliminates 2–3 weeks of camera work. Google Drive-quality scanning in ~50 lines. ML Kit's job ends at the PDF file — signing is identical either way. Requires GMS (irrelevant for Play Store).
+- **Apache PDFBox Android over iText 7**: iText 7 is AGPL — incompatible with a commercial closed-source Play Store app without a paid licence. PDFBox is Apache 2.0, free for commercial use, and fully capable of opening and modifying existing PDFs for signature embedding.
+- **Ads are planned, not optional**: AdMob integration in Week 6, live at Phase 1 launch. All library choices verified as Apache 2.0 / MIT — no AGPL or GPL dependencies.
+- **Two-phase delivery**: PDF Scanner ships first (Week 8); Signing is additive in Phase 2.
+- **Room deferred to Week 4**: Built alongside the Scanner feature — entities shaped by real usage.
+- **Navigation 3**: Type-safe `@Serializable` routes + `NavDisplay` + `SnapshotStateList` back stack.
+- **Local-first, no cloud sync**: All data stays on device; no Firebase Storage, no Retrofit.
+- **No Hilt**: Koin chosen for future KMP compatibility.
+- **Domain layer stays pure**: No Android or Koin imports in use cases.
+- **No mocks in tests**: Fake repository implementations instead of Mockito.
 
 ---
 
 ## Success Criteria
 
-**Phase 1 (Week 9)**
-- ✅ Scan multi-page documents, generate PDFs, manage and share — fully offline
-- ✅ 80%+ test coverage on domain + data layers
+**Phase 1 (Week 8)**
+- ✅ Scan multi-page documents, manage and share PDFs — fully offline
+- ✅ 80%+ domain + data layer test coverage
 - ✅ Cold start < 2 seconds
-- ✅ AAB submitted to Play Store
+- ✅ AAB signed and live on Play Store
 
 **Phase 2 (Week 15)**
 - ✅ Draw, image, and digital signatures embedded in PDFs
 - ✅ Signature verification working
+- ✅ AdMob banner + interstitial ads live in production
+- ✅ GDPR/CCPA consent handled
 - ✅ 70%+ total test coverage
 - ✅ Updated Play Store listing live
 
 ---
 
-**Version**: 2.0
+**Version**: 4.0
 **Status**: In Progress — Week 2 Complete (2.1 Core UI ✅, 2.2 Navigation 3 ✅)
