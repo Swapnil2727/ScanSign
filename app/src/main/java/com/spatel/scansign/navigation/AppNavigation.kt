@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Draw
 import androidx.compose.material.icons.filled.FolderOpen
@@ -29,7 +28,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
-import androidx.navigation3.runtime.entry
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.ui.NavDisplay
 import com.spatel.scansign.ui.documents.DocumentsScreen
@@ -61,7 +59,7 @@ fun AppNavigation() {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding),
-            onBack = { if (backStack.size > 1) backStack.removeLast() },
+            onBack = { if (backStack.size > 1) backStack.removeAt(backStack.lastIndex) },
             entryProvider = entryProvider {
                 entry<DocumentsRoute> {
                     DocumentsScreen(
@@ -70,7 +68,7 @@ fun AppNavigation() {
                     )
                 }
                 entry<ScannerRoute> {
-                    ScannerScreen(onBack = { backStack.removeLast() })
+                    ScannerScreen(onBack = { backStack.removeAt(backStack.lastIndex) })
                 }
                 entry<SignerRoute> {
                     SignerScreen()
