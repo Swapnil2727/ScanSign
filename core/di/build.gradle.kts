@@ -22,4 +22,6 @@ dependencies {
     implementation(libs.koin.core)
     implementation(libs.koin.android)
     implementation(projects.core.pdf)
+    implementation(projects.core.database)
+    implementation(libs.androidx.room.runtime)
 }

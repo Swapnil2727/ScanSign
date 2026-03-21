@@ -1,7 +1,17 @@
 package com.spatel.scansign.core.di
 
+import androidx.room.Room
+import com.spatel.scansign.core.database.ScanSignDatabase
+import org.koin.android.ext.koin.androidContext
 import org.koin.dsl.module
 
 val databaseModule = module {
-    // Room database and DAOs will be registered here in Week 2
+    single {
+        Room.databaseBuilder(
+            androidContext(),
+            ScanSignDatabase::class.java,
+            "scansign.db",
+        ).build()
+    }
+    single { get<ScanSignDatabase>().documentDao() }
 }
