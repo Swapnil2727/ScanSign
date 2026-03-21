@@ -3,7 +3,7 @@ plugins {
 }
 
 android {
-    namespace = "com.spatel.scansign.core.di"
+    namespace = "com.spatel.scansign.core.pdf"
     compileSdk {
         version = release(36)
     }
@@ -19,7 +19,6 @@ android {
 }
 
 dependencies {
-    implementation(libs.koin.core)
-    implementation(libs.koin.android)
-    implementation(projects.core.pdf)
+    implementation(libs.pdfbox.android)
+    implementation(libs.kotlinx.coroutines.core)
 }
