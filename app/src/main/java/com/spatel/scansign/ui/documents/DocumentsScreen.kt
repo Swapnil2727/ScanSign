@@ -1,5 +1,9 @@
 package com.spatel.scansign.ui.documents
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,12 +21,16 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Draw
 import androidx.compose.material.icons.filled.FileOpen
 import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -30,22 +38,37 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -54,6 +77,7 @@ import com.spatel.scansign.core.model.Document
 import com.spatel.scansign.core.model.DocumentStatus
 import com.spatel.scansign.core.ui.preview.ThemePreviews
 import com.spatel.scansign.core.ui.theme.ScanSignTheme
+import kotlinx.coroutines.launch
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -68,14 +92,39 @@ fun DocumentsScreen(
     viewModel: DocumentsViewModel,
 ) {
     val documents by viewModel.documents.collectAsState()
+    val searchQuery by viewModel.searchQuery.collectAsState()
+    var isSearchActive by remember { mutableStateOf(false) }
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+
+    val onDeleteRequest: (String) -> Unit = { id ->
+        viewModel.requestDelete(id)
+        scope.launch {
+            val result = snackbarHostState.showSnackbar(
+                message = "Document deleted",
+                actionLabel = "Undo",
+                duration = SnackbarDuration.Long,
+            )
+            when (result) {
+                SnackbarResult.ActionPerformed -> viewModel.undoDelete()
+                SnackbarResult.Dismissed -> viewModel.confirmDelete()
+            }
+        }
+    }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("ScanSign", fontWeight = FontWeight.Bold) },
                 actions = {
-                    IconButton(onClick = { }) {
-                        Icon(Icons.Outlined.Search, contentDescription = "Search")
+                    IconButton(onClick = {
+                        isSearchActive = !isSearchActive
+                        if (!isSearchActive) viewModel.onSearchQueryChange("")
+                    }) {
+                        Icon(
+                            if (isSearchActive) Icons.Outlined.Close else Icons.Outlined.Search,
+                            contentDescription = if (isSearchActive) "Close search" else "Search",
+                        )
                     }
                     IconButton(onClick = { }) {
                         Box(
@@ -83,7 +132,7 @@ fun DocumentsScreen(
                                 .size(32.dp)
                                 .clip(CircleShape)
                                 .background(MaterialTheme.colorScheme.primaryContainer),
-                            contentAlignment = Alignment.Center
+                            contentAlignment = Alignment.Center,
                         ) {
                             Text(
                                 "SP",
@@ -98,31 +147,150 @@ fun DocumentsScreen(
                 ),
             )
         },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { innerPadding ->
-        LazyColumn(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
                 .padding(innerPadding),
-            contentPadding = PaddingValues(bottom = 16.dp),
         ) {
-            item { GreetingHeader(documentCount = documents.size) }
-            item {
-                QuickActionsGrid(
-                    onScanClick = onScanClick,
-                    onSignClick = onSignClick,
+            AnimatedVisibility(
+                visible = isSearchActive,
+                enter = expandVertically(),
+                exit = shrinkVertically(),
+            ) {
+                SearchBar(
+                    query = searchQuery,
+                    onQueryChange = viewModel::onSearchQueryChange,
                 )
             }
-            item { RecentDocumentsHeader() }
-            if (documents.isEmpty()) {
-                item { EmptyDocumentsHint() }
-            } else {
-                items(documents, key = { it.id }) { doc ->
-                    DocumentListItem(doc = doc, onClick = { onDocumentClick(doc.id) })
+
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(bottom = 16.dp),
+            ) {
+                if (!isSearchActive) {
+                    item { GreetingHeader(documentCount = documents.size) }
+                    item {
+                        QuickActionsGrid(
+                            onScanClick = onScanClick,
+                            onSignClick = onSignClick,
+                        )
+                    }
+                }
+                item {
+                    if (isSearchActive) SearchResultsHeader(documents.size)
+                    else RecentDocumentsHeader()
+                }
+                if (documents.isEmpty()) {
+                    item {
+                        if (isSearchActive && searchQuery.isNotBlank()) {
+                            NoSearchResultsHint(searchQuery)
+                        } else {
+                            EmptyDocumentsHint()
+                        }
+                    }
+                } else {
+                    items(documents, key = { it.id }) { doc ->
+                        SwipeableDocumentItem(
+                            doc = doc,
+                            onDocumentClick = onDocumentClick,
+                            onDeleteRequest = onDeleteRequest,
+                        )
+                    }
                 }
             }
         }
     }
+}
+
+// ── Swipeable document item ───────────────────────────────────────────────────
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SwipeableDocumentItem(
+    doc: Document,
+    onDocumentClick: (String) -> Unit,
+    onDeleteRequest: (String) -> Unit,
+) {
+    val dismissState = rememberSwipeToDismissBoxState(
+        confirmValueChange = { value ->
+            if (value == SwipeToDismissBoxValue.EndToStart) {
+                onDeleteRequest(doc.id)
+                true
+            } else {
+                false
+            }
+        },
+    )
+
+    SwipeToDismissBox(
+        state = dismissState,
+        enableDismissFromStartToEnd = false,
+        backgroundContent = { SwipeDeleteBackground(dismissState.targetValue) },
+    ) {
+        DocumentListItem(doc = doc, onClick = { onDocumentClick(doc.id) })
+    }
+}
+
+@Composable
+private fun SwipeDeleteBackground(targetValue: SwipeToDismissBoxValue) {
+    val color by animateColorAsState(
+        targetValue = if (targetValue == SwipeToDismissBoxValue.EndToStart)
+            MaterialTheme.colorScheme.errorContainer
+        else
+            Color.Transparent,
+        label = "swipeBg",
+    )
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 20.dp, vertical = 4.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(color),
+        contentAlignment = Alignment.CenterEnd,
+    ) {
+        Icon(
+            Icons.Filled.Delete,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onErrorContainer,
+            modifier = Modifier.padding(end = 20.dp),
+        )
+    }
+}
+
+// ── Search bar ────────────────────────────────────────────────────────────────
+
+@Composable
+private fun SearchBar(
+    query: String,
+    onQueryChange: (String) -> Unit,
+) {
+    val focusManager = LocalFocusManager.current
+    OutlinedTextField(
+        value = query,
+        onValueChange = onQueryChange,
+        placeholder = { Text("Search documents…") },
+        leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) },
+        trailingIcon = {
+            if (query.isNotEmpty()) {
+                IconButton(onClick = { onQueryChange("") }) {
+                    Icon(Icons.Outlined.Close, contentDescription = "Clear")
+                }
+            }
+        },
+        singleLine = true,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        shape = RoundedCornerShape(12.dp),
+        colors = OutlinedTextFieldDefaults.colors(
+            unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.4f),
+        ),
+        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+        keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() }),
+    )
 }
 
 // ── Private composables ───────────────────────────────────────────────────────
@@ -230,6 +398,28 @@ private fun QuickActionCard(
 }
 
 @Composable
+private fun SearchResultsHeader(resultCount: Int) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp, vertical = 16.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            "Results",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+        )
+        Text(
+            "$resultCount found",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
 private fun RecentDocumentsHeader() {
     Row(
         modifier = Modifier
@@ -257,6 +447,22 @@ private fun EmptyDocumentsHint() {
     ) {
         Text(
             "No documents yet. Tap Scan to get started.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun NoSearchResultsHint(query: String) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp, vertical = 32.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            "No results for \"$query\"",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -349,8 +555,25 @@ private fun Long.formatDate(): String =
     SimpleDateFormat("MMM d, yyyy", Locale.getDefault()).format(Date(this))
 
 private fun Long.formatSize(): String = when {
-    this < 1024        -> "${this} B"
+    this < 1024        -> "$this B"
     this < 1024 * 1024 -> "${"%.0f".format(this / 1024.0)} KB"
     else               -> "${"%.1f".format(this / (1024.0 * 1024))} MB"
 }
 
+// ── Previews ──────────────────────────────────────────────────────────────────
+
+@ThemePreviews
+@Composable
+private fun SearchBarPreview() {
+    ScanSignTheme {
+        SearchBar(query = "Invoice", onQueryChange = {})
+    }
+}
+
+@ThemePreviews
+@Composable
+private fun SwipeDeleteBackgroundPreview() {
+    ScanSignTheme {
+        SwipeDeleteBackground(targetValue = SwipeToDismissBoxValue.EndToStart)
+    }
+}
