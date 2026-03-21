@@ -1,5 +1,6 @@
 package com.spatel.scansign.core.di
 
+import com.spatel.scansign.core.data.DeleteDocumentUseCase
 import com.spatel.scansign.core.data.DocumentRepository
 import com.spatel.scansign.core.data.SaveScannedDocumentUseCase
 import com.spatel.scansign.core.pdf.PdfCopier
@@ -14,4 +15,5 @@ val appModule = module {
     single { PdfPageRenderer() }
     single<DocumentRepository> { DocumentRepository(get(), get(), get(), androidContext()) }
     single<SaveScannedDocumentUseCase> { SaveScannedDocumentUseCase(get<DocumentRepository>()) }
+    single<DeleteDocumentUseCase> { DeleteDocumentUseCase(get<DocumentRepository>()) }
 }

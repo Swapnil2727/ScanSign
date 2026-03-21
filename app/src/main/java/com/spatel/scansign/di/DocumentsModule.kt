@@ -6,6 +6,6 @@ import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 
 val documentsModule = module {
-    viewModel { DocumentsViewModel(get()) }
+    viewModel { DocumentsViewModel(get(), get()) }
     viewModel { params -> DocumentDetailViewModel(params.get(), get()) }
 }
