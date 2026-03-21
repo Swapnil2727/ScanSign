@@ -25,5 +25,7 @@ dependencies {
     implementation(projects.core.pdf)
     implementation(projects.core.database)
     implementation(projects.core.data)
+    implementation(projects.core.datastore)
     implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.datastore.preferences)
 }
