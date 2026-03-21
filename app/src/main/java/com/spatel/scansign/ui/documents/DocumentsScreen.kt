@@ -1,6 +1,5 @@
 package com.spatel.scansign.ui.documents
 
-import android.content.res.Configuration
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -38,24 +37,38 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
+import com.spatel.scansign.core.model.Document
+import com.spatel.scansign.core.model.DocumentStatus
 import com.spatel.scansign.core.ui.preview.ThemePreviews
 import com.spatel.scansign.core.ui.theme.ScanSignTheme
+import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DocumentsScreen(
     onScanClick: () -> Unit = {},
     onSignClick: () -> Unit = {},
+    onDocumentClick: (String) -> Unit = {},
+    viewModel: DocumentsViewModel,
 ) {
+    val documents by viewModel.documents.collectAsState()
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -93,7 +106,7 @@ fun DocumentsScreen(
                 .padding(innerPadding),
             contentPadding = PaddingValues(bottom = 16.dp),
         ) {
-            item { GreetingHeader() }
+            item { GreetingHeader(documentCount = documents.size) }
             item {
                 QuickActionsGrid(
                     onScanClick = onScanClick,
@@ -101,7 +114,13 @@ fun DocumentsScreen(
                 )
             }
             item { RecentDocumentsHeader() }
-            items(sampleDocuments) { doc -> DocumentListItem(doc) }
+            if (documents.isEmpty()) {
+                item { EmptyDocumentsHint() }
+            } else {
+                items(documents, key = { it.id }) { doc ->
+                    DocumentListItem(doc = doc, onClick = { onDocumentClick(doc.id) })
+                }
+            }
         }
     }
 }
@@ -109,7 +128,7 @@ fun DocumentsScreen(
 // ── Private composables ───────────────────────────────────────────────────────
 
 @Composable
-private fun GreetingHeader() {
+private fun GreetingHeader(documentCount: Int) {
     Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)) {
         Text(
             "Good morning,",
@@ -123,7 +142,7 @@ private fun GreetingHeader() {
         )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
-            "12 documents · 15.3 MB used",
+            "$documentCount document${if (documentCount == 1) "" else "s"}",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -229,7 +248,24 @@ private fun RecentDocumentsHeader() {
 }
 
 @Composable
-private fun DocumentListItem(doc: SampleDocument) {
+private fun EmptyDocumentsHint() {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp, vertical = 32.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            "No documents yet. Tap Scan to get started.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun DocumentListItem(doc: Document, onClick: () -> Unit) {
+    val statusColor = doc.status.color()
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -237,6 +273,7 @@ private fun DocumentListItem(doc: SampleDocument) {
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        onClick = onClick,
     ) {
         Row(
             modifier = Modifier
@@ -251,12 +288,21 @@ private fun DocumentListItem(doc: SampleDocument) {
                     .background(MaterialTheme.colorScheme.primaryContainer),
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(
-                    Icons.Filled.Description,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(24.dp),
-                )
+                if (doc.thumbnailPath != null) {
+                    AsyncImage(
+                        model = File(doc.thumbnailPath!!),
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                } else {
+                    Icon(
+                        Icons.Filled.Description,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(24.dp),
+                    )
+                }
             }
             Spacer(modifier = Modifier.width(14.dp))
             Column(modifier = Modifier.weight(1f)) {
@@ -268,7 +314,7 @@ private fun DocumentListItem(doc: SampleDocument) {
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
-                    "${doc.date} · ${doc.pages} pages · ${doc.size}",
+                    "${doc.createdAt.formatDate()} · ${doc.pageCount} page${if (doc.pageCount == 1) "" else "s"} · ${doc.fileSize.formatSize()}",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -276,12 +322,12 @@ private fun DocumentListItem(doc: SampleDocument) {
             Spacer(modifier = Modifier.width(8.dp))
             Surface(
                 shape = RoundedCornerShape(8.dp),
-                color = doc.status.color.copy(alpha = 0.12f),
+                color = statusColor.copy(alpha = 0.12f),
             ) {
                 Text(
-                    doc.status.label,
+                    doc.status.name.lowercase().replaceFirstChar { it.uppercase() },
                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                    color = doc.status.color,
+                    color = statusColor,
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.SemiBold,
                 )
@@ -290,37 +336,21 @@ private fun DocumentListItem(doc: SampleDocument) {
     }
 }
 
-// ── Sample data (replaced by Room in Week 2.3) ────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
-private data class SampleDocument(
-    val title: String,
-    val date: String,
-    val pages: Int,
-    val size: String,
-    val status: SampleDocumentStatus,
-)
-
-private enum class SampleDocumentStatus(val label: String, val color: Color) {
-    SIGNED("Signed", Color(0xFF43A047)),
-    DRAFT("Draft", Color(0xFFFFA000)),
-    PENDING("Pending", Color(0xFF1565C0)),
-    SCANNED("Scanned", Color(0xFF00897B)),
+private fun DocumentStatus.color(): Color = when (this) {
+    DocumentStatus.SIGNED  -> Color(0xFF43A047)
+    DocumentStatus.DRAFT   -> Color(0xFFFFA000)
+    DocumentStatus.PENDING -> Color(0xFF1565C0)
+    DocumentStatus.SCANNED -> Color(0xFF00897B)
 }
 
-private val sampleDocuments = listOf(
-    SampleDocument("Employment Contract", "Mar 10, 2026", 4, "2.3 MB", SampleDocumentStatus.SIGNED),
-    SampleDocument("Tax Return 2025", "Mar 8, 2026", 12, "5.1 MB", SampleDocumentStatus.PENDING),
-    SampleDocument("Invoice #1042", "Mar 7, 2026", 1, "340 KB", SampleDocumentStatus.DRAFT),
-    SampleDocument("Meeting Notes", "Mar 5, 2026", 2, "890 KB", SampleDocumentStatus.SCANNED),
-    SampleDocument("Lease Agreement", "Mar 3, 2026", 8, "3.7 MB", SampleDocumentStatus.SIGNED),
-)
+private fun Long.formatDate(): String =
+    SimpleDateFormat("MMM d, yyyy", Locale.getDefault()).format(Date(this))
 
-// ── Previews ──────────────────────────────────────────────────────────────────
-
-@ThemePreviews
-@Composable
-private fun DocumentsScreenPreview() {
-    ScanSignTheme(dynamicColor = false) {
-        DocumentsScreen()
-    }
+private fun Long.formatSize(): String = when {
+    this < 1024        -> "${this} B"
+    this < 1024 * 1024 -> "${"%.0f".format(this / 1024.0)} KB"
+    else               -> "${"%.1f".format(this / (1024.0 * 1024))} MB"
 }
+

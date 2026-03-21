@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.ui.NavDisplay
 import com.spatel.scansign.ui.documents.DocumentsScreen
+import com.spatel.scansign.ui.documents.DocumentsViewModel
 import com.spatel.scansign.ui.scanner.ScanConfirmScreen
 import com.spatel.scansign.ui.scanner.ScannerScreen
 import com.spatel.scansign.ui.scanner.ScannerViewModel
@@ -43,6 +44,7 @@ fun AppNavigation() {
     val backStack = remember { mutableStateListOf<Any>(DocumentsRoute) }
     val currentRoute = backStack.last()
     val scannerViewModel: ScannerViewModel = koinViewModel()
+    val documentsViewModel: DocumentsViewModel = koinViewModel()
 
     val showBottomBar = currentRoute !is ScannerRoute && currentRoute !is ScanConfirmRoute
 
@@ -73,6 +75,8 @@ fun AppNavigation() {
                     DocumentsScreen(
                         onScanClick = { backStack.add(ScannerRoute) },
                         onSignClick = { backStack.add(SignerRoute) },
+                        onDocumentClick = { id -> backStack.add(DocumentDetailRoute(id)) },
+                        viewModel = documentsViewModel,
                     )
                 }
                 entry<ScannerRoute> {
