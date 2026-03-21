@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -83,7 +84,8 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-@OptIn(ExperimentalMaterial3Api::class)
+// ── Public screen (stateful) ──────────────────────────────────────────────────
+
 @Composable
 fun DocumentsScreen(
     onScanClick: () -> Unit = {},
@@ -112,15 +114,45 @@ fun DocumentsScreen(
         }
     }
 
+    DocumentsContent(
+        documents = documents,
+        searchQuery = searchQuery,
+        isSearchActive = isSearchActive,
+        snackbarHostState = snackbarHostState,
+        onSearchToggle = {
+            isSearchActive = !isSearchActive
+            if (!isSearchActive) viewModel.onSearchQueryChange("")
+        },
+        onSearchQueryChange = viewModel::onSearchQueryChange,
+        onScanClick = onScanClick,
+        onSignClick = onSignClick,
+        onDocumentClick = onDocumentClick,
+        onDeleteRequest = onDeleteRequest,
+    )
+}
+
+// ── Private content (stateless, previewable) ──────────────────────────────────
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DocumentsContent(
+    documents: List<Document>,
+    searchQuery: String,
+    isSearchActive: Boolean,
+    snackbarHostState: SnackbarHostState,
+    onSearchToggle: () -> Unit,
+    onSearchQueryChange: (String) -> Unit,
+    onScanClick: () -> Unit,
+    onSignClick: () -> Unit,
+    onDocumentClick: (String) -> Unit,
+    onDeleteRequest: (String) -> Unit,
+) {
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("ScanSign", fontWeight = FontWeight.Bold) },
                 actions = {
-                    IconButton(onClick = {
-                        isSearchActive = !isSearchActive
-                        if (!isSearchActive) viewModel.onSearchQueryChange("")
-                    }) {
+                    IconButton(onClick = onSearchToggle) {
                         Icon(
                             if (isSearchActive) Icons.Outlined.Close else Icons.Outlined.Search,
                             contentDescription = if (isSearchActive) "Close search" else "Search",
@@ -162,7 +194,7 @@ fun DocumentsScreen(
             ) {
                 SearchBar(
                     query = searchQuery,
-                    onQueryChange = viewModel::onSearchQueryChange,
+                    onQueryChange = onSearchQueryChange,
                 )
             }
 
@@ -377,7 +409,7 @@ private fun QuickActionCard(
     onClick: () -> Unit = {},
 ) {
     Card(
-        modifier = modifier.height(100.dp),
+        modifier = modifier.heightIn(min = 100.dp),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = containerColor),
         onClick = onClick,
@@ -388,7 +420,12 @@ private fun QuickActionCard(
                 .padding(16.dp),
             verticalArrangement = Arrangement.SpaceBetween,
         ) {
-            Icon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(28.dp))
+            Icon(
+                icon,
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier.size(28.dp)
+            )
             Column {
                 Text(title, color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
                 Text(subtitle, color = Color.White.copy(alpha = 0.8f), fontSize = 12.sp)
@@ -545,8 +582,8 @@ private fun DocumentListItem(doc: Document, onClick: () -> Unit) {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 private fun DocumentStatus.color(): Color = when (this) {
-    DocumentStatus.SIGNED  -> Color(0xFF43A047)
-    DocumentStatus.DRAFT   -> Color(0xFFFFA000)
+    DocumentStatus.SIGNED -> Color(0xFF43A047)
+    DocumentStatus.DRAFT -> Color(0xFFFFA000)
     DocumentStatus.PENDING -> Color(0xFF1565C0)
     DocumentStatus.SCANNED -> Color(0xFF00897B)
 }
@@ -555,25 +592,120 @@ private fun Long.formatDate(): String =
     SimpleDateFormat("MMM d, yyyy", Locale.getDefault()).format(Date(this))
 
 private fun Long.formatSize(): String = when {
-    this < 1024        -> "$this B"
+    this < 1024 -> "$this B"
     this < 1024 * 1024 -> "${"%.0f".format(this / 1024.0)} KB"
-    else               -> "${"%.1f".format(this / (1024.0 * 1024))} MB"
+    else -> "${"%.1f".format(this / (1024.0 * 1024))} MB"
 }
+
+// ── Preview data ──────────────────────────────────────────────────────────────
+
+private val previewDocuments = listOf(
+    Document(
+        id = "1",
+        title = "Invoice March 2025",
+        createdAt = 1_740_000_000_000L,
+        updatedAt = 1_740_000_000_000L,
+        pageCount = 3,
+        fileSize = 1_240_000L,
+        status = DocumentStatus.SIGNED,
+        thumbnailPath = null,
+    ),
+    Document(
+        id = "2",
+        title = "NDA — Acme Corp",
+        createdAt = 1_739_000_000_000L,
+        updatedAt = 1_739_000_000_000L,
+        pageCount = 5,
+        fileSize = 2_048_000L,
+        status = DocumentStatus.SCANNED,
+        thumbnailPath = null,
+    ),
+    Document(
+        id = "3",
+        title = "Expense Report Q1",
+        createdAt = 1_738_000_000_000L,
+        updatedAt = 1_738_000_000_000L,
+        pageCount = 1,
+        fileSize = 512_000L,
+        status = DocumentStatus.DRAFT,
+        thumbnailPath = null,
+    ),
+)
 
 // ── Previews ──────────────────────────────────────────────────────────────────
 
 @ThemePreviews
 @Composable
-private fun SearchBarPreview() {
+private fun DocumentsWithDocumentsPreview() {
     ScanSignTheme {
-        SearchBar(query = "Invoice", onQueryChange = {})
+        DocumentsContent(
+            documents = previewDocuments,
+            searchQuery = "",
+            isSearchActive = false,
+            snackbarHostState = remember { SnackbarHostState() },
+            onSearchToggle = {},
+            onSearchQueryChange = {},
+            onScanClick = {},
+            onSignClick = {},
+            onDocumentClick = {},
+            onDeleteRequest = {},
+        )
     }
 }
 
 @ThemePreviews
 @Composable
-private fun SwipeDeleteBackgroundPreview() {
+private fun DocumentsEmptyPreview() {
     ScanSignTheme {
-        SwipeDeleteBackground(targetValue = SwipeToDismissBoxValue.EndToStart)
+        DocumentsContent(
+            documents = emptyList(),
+            searchQuery = "",
+            isSearchActive = false,
+            snackbarHostState = remember { SnackbarHostState() },
+            onSearchToggle = {},
+            onSearchQueryChange = {},
+            onScanClick = {},
+            onSignClick = {},
+            onDocumentClick = {},
+            onDeleteRequest = {},
+        )
+    }
+}
+
+@ThemePreviews
+@Composable
+private fun DocumentsSearchActivePreview() {
+    ScanSignTheme {
+        DocumentsContent(
+            documents = previewDocuments.take(1),
+            searchQuery = "Invoice",
+            isSearchActive = true,
+            snackbarHostState = remember { SnackbarHostState() },
+            onSearchToggle = {},
+            onSearchQueryChange = {},
+            onScanClick = {},
+            onSignClick = {},
+            onDocumentClick = {},
+            onDeleteRequest = {},
+        )
+    }
+}
+
+@ThemePreviews
+@Composable
+private fun DocumentsSearchNoResultsPreview() {
+    ScanSignTheme {
+        DocumentsContent(
+            documents = emptyList(),
+            searchQuery = "receipt",
+            isSearchActive = true,
+            snackbarHostState = remember { SnackbarHostState() },
+            onSearchToggle = {},
+            onSearchQueryChange = {},
+            onScanClick = {},
+            onSignClick = {},
+            onDocumentClick = {},
+            onDeleteRequest = {},
+        )
     }
 }
