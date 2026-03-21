@@ -40,6 +40,7 @@ android {
 
 dependencies {
     implementation(projects.core.model)
+    implementation(projects.core.data)
     implementation(projects.core.di)
     implementation(projects.core.ui) // Compose BOM + Material3 exposed transitively
 
