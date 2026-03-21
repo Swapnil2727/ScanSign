@@ -303,7 +303,7 @@ Feature-based modules with layer separation:
 - **Local-first, no cloud sync**: All data stays on device; no Firebase Storage, no Retrofit.
 - **No Hilt**: Koin chosen for future KMP compatibility.
 - **Domain layer stays pure**: No Android or Koin imports in use cases.
-- **No mocks in tests**: Fake repository implementations instead of Mockito.
+- **No mocks in tests**: Fake repository implementations instead of Mockito. Narrow exception: `mockk` is used in Week 3 `ScannerViewModelTest` solely to stub `android.net.Uri`, which is an Android SDK abstract class with no domain behaviour to fake.
 
 ---
 
