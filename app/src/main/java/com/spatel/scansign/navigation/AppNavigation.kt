@@ -31,27 +31,35 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.ui.NavDisplay
 import com.spatel.scansign.ui.documents.DocumentsScreen
+import com.spatel.scansign.ui.scanner.ScanConfirmScreen
 import com.spatel.scansign.ui.scanner.ScannerScreen
+import com.spatel.scansign.ui.scanner.ScannerViewModel
 import com.spatel.scansign.ui.settings.SettingsScreen
 import com.spatel.scansign.ui.signer.SignerScreen
+import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun AppNavigation() {
     val backStack = remember { mutableStateListOf<Any>(DocumentsRoute) }
     val currentRoute = backStack.last()
+    val scannerViewModel: ScannerViewModel = koinViewModel()
+
+    val showBottomBar = currentRoute !is ScannerRoute && currentRoute !is ScanConfirmRoute
 
     Scaffold(
         bottomBar = {
-            AppBottomBar(
-                currentRoute = currentRoute,
-                onNavigateTo = { destination ->
-                    // Clicking a tab replaces the entire back stack with that root destination.
-                    // Detail screens (e.g. DocumentDetailRoute) push on top separately via
-                    // callbacks passed into each screen.
-                    backStack.clear()
-                    backStack.add(destination)
-                },
-            )
+            if (showBottomBar) {
+                AppBottomBar(
+                    currentRoute = currentRoute,
+                    onNavigateTo = { destination ->
+                        // Clicking a tab replaces the entire back stack with that root destination.
+                        // Detail screens (e.g. DocumentDetailRoute) push on top separately via
+                        // callbacks passed into each screen.
+                        backStack.clear()
+                        backStack.add(destination)
+                    },
+                )
+            }
         },
     ) { innerPadding ->
         NavDisplay(
@@ -68,7 +76,24 @@ fun AppNavigation() {
                     )
                 }
                 entry<ScannerRoute> {
-                    ScannerScreen(onBack = { backStack.removeAt(backStack.lastIndex) })
+                    ScannerScreen(
+                        onBack = { backStack.removeAt(backStack.lastIndex) },
+                        onScanComplete = { backStack.add(ScanConfirmRoute) },
+                        viewModel = scannerViewModel,
+                    )
+                }
+                entry<ScanConfirmRoute> {
+                    ScanConfirmScreen(
+                        onDiscard = {
+                            backStack.removeAt(backStack.lastIndex) // ScanConfirmRoute
+                            backStack.removeAt(backStack.lastIndex) // ScannerRoute
+                        },
+                        onSaveConfirmed = {
+                            backStack.clear()
+                            backStack.add(DocumentsRoute)
+                        },
+                        viewModel = scannerViewModel,
+                    )
                 }
                 entry<SignerRoute> {
                     SignerScreen()

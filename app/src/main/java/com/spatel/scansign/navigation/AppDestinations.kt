@@ -9,4 +9,5 @@ import kotlinx.serialization.Serializable
 @Serializable data object SettingsRoute
 
 // Detail destinations pushed on top of a root
+@Serializable data object ScanConfirmRoute
 @Serializable data class DocumentDetailRoute(val documentId: String)
