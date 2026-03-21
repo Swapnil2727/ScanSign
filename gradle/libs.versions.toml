@@ -1,6 +1,6 @@
 [versions]
 agp = "9.0.1"
-kotlin = "2.0.21"
+kotlin = "2.2.10"
 coreKtx = "1.17.0"
 lifecycleRuntimeKtx = "2.10.0"
 activityCompose = "1.12.4"
@@ -11,6 +11,8 @@ kotlinxCoroutines = "1.9.0"
 nav3 = "1.0.1"
 lifecycleViewmodelNav3 = "2.11.0-alpha02"
 mlkitDocumentScanner = "16.0.0-beta1"
+room = "2.7.0"
+ksp  = "2.2.10-2.0.2"
 pdfboxAndroid = "2.0.27.0"
 coil = "2.7.0"
 mockk = "1.13.12"
@@ -51,6 +53,11 @@ androidx-navigation3-runtime = { module = "androidx.navigation3:navigation3-runt
 androidx-navigation3-ui = { module = "androidx.navigation3:navigation3-ui", version.ref = "nav3" }
 androidx-lifecycle-viewmodel-navigation3 = { module = "androidx.lifecycle:lifecycle-viewmodel-navigation3", version.ref = "lifecycleViewmodelNav3" }
 
+# Room
+androidx-room-runtime  = { group = "androidx.room", name = "room-runtime",  version.ref = "room" }
+androidx-room-ktx      = { group = "androidx.room", name = "room-ktx",      version.ref = "room" }
+androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
+
 # ML Kit + PDF + Coil
 mlkit-document-scanner = { group = "com.google.android.gms", name = "play-services-mlkit-document-scanner", version.ref = "mlkitDocumentScanner" }
 pdfbox-android = { group = "com.tom-roush", name = "pdfbox-android", version.ref = "pdfboxAndroid" }
@@ -67,3 +74,4 @@ android-application = { id = "com.android.application", version.ref = "agp" }
 android-library = { id = "com.android.library", version.ref = "agp" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
