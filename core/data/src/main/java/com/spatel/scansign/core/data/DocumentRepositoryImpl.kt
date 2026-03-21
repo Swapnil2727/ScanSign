@@ -6,6 +6,7 @@ import com.spatel.scansign.core.database.DocumentDao
 import com.spatel.scansign.core.database.DocumentEntity
 import com.spatel.scansign.core.database.DocumentPageEntity
 import com.spatel.scansign.core.model.Document
+import com.spatel.scansign.core.model.DocumentPage
 import com.spatel.scansign.core.model.DocumentStatus
 import com.spatel.scansign.core.pdf.PdfCopier
 import com.spatel.scansign.core.pdf.PdfMetadata
@@ -68,6 +69,20 @@ internal class DocumentRepositoryImpl(
 
     override fun getAll(): Flow<List<Document>> =
         dao.getAll().map { list -> list.map { it.toDomain() } }
+
+    override fun getById(id: String): Flow<Document?> =
+        dao.observeById(id).map { it?.toDomain() }
+
+    override suspend fun getPages(documentId: String): List<DocumentPage> =
+        withContext(Dispatchers.IO) {
+            dao.getPagesByDocumentId(documentId).map { it.toDomain() }
+        }
+
+    override suspend fun rename(id: String, title: String) {
+        withContext(Dispatchers.IO) {
+            dao.updateTitle(id, title, System.currentTimeMillis())
+        }
+    }
 
     override suspend fun delete(id: String) {
         withContext(Dispatchers.IO) {

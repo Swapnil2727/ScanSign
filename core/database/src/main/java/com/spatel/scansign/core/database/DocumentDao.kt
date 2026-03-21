@@ -21,6 +21,9 @@ interface DocumentDao {
     @Query("SELECT * FROM documents WHERE id = :id")
     suspend fun getById(id: String): DocumentEntity?
 
+    @Query("SELECT * FROM documents WHERE id = :id")
+    fun observeById(id: String): Flow<DocumentEntity?>
+
     @Query("SELECT * FROM document_pages WHERE document_id = :documentId ORDER BY page_number ASC")
     suspend fun getPagesByDocumentId(documentId: String): List<DocumentPageEntity>
 
