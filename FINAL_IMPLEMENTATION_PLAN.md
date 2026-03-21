@@ -161,6 +161,13 @@ Feature-based modules with layer separation:
 - Storage usage display (total documents, disk used)
 - App info (version, open-source licences, privacy policy)
 
+> **Known gap — Scan Quality is stored but inert.**
+> `ScanQuality.HIGH/STANDARD` persists to DataStore correctly but nothing reads it
+> during scanning. ML Kit Document Scanner has no public quality API; the correct
+> hook is in `PdfCopier` (`:core:pdf`) — re-encode page images at different JPEG
+> quality when writing the final PDF (e.g. 72% Standard, 95% High). Deferred to
+> Week 7 polish or a dedicated small PR before release.
+
 ---
 
 ### Week 7: Phase 1 Polish + Testing
