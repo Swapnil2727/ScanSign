@@ -81,6 +81,7 @@ import com.spatel.scansign.core.ui.theme.ScanSignTheme
 import kotlinx.coroutines.launch
 import java.io.File
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
@@ -329,9 +330,17 @@ private fun SearchBar(
 
 @Composable
 private fun GreetingHeader(documentCount: Int) {
+    val greeting = remember {
+        val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
+        when {
+            hour < 12 -> "Good morning,"
+            hour < 18 -> "Good afternoon,"
+            else      -> "Good evening,"
+        }
+    }
     Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)) {
         Text(
-            "Good morning,",
+            greeting,
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -340,12 +349,14 @@ private fun GreetingHeader(documentCount: Int) {
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
         )
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            "$documentCount document${if (documentCount == 1) "" else "s"}",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        if (documentCount == 0) {
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                "Ready to scan your first document",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
     }
 }
 
@@ -636,7 +647,7 @@ private val previewDocuments = listOf(
 
 @ThemePreviews
 @Composable
-private fun DocumentsWithDocumentsPreview() {
+private fun DocumentsMorningPreview() {
     ScanSignTheme {
         DocumentsContent(
             documents = previewDocuments,
