@@ -13,5 +13,5 @@ val appModule = module {
     single { PdfMetadata() }
     single { PdfPageRenderer() }
     single<DocumentRepository> { DocumentRepository(get(), get(), get(), androidContext()) }
-    single<SaveScannedDocumentUseCase> { SaveScannedDocumentUseCase(get()) }
+    single<SaveScannedDocumentUseCase> { SaveScannedDocumentUseCase(get<DocumentRepository>()) }
 }
