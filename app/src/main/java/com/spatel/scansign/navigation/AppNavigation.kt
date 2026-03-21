@@ -30,19 +30,24 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.ui.NavDisplay
+import com.spatel.scansign.ui.documents.DocumentDetailViewModel
+import com.spatel.scansign.ui.documents.DocumentDetailScreen
 import com.spatel.scansign.ui.documents.DocumentsScreen
+import com.spatel.scansign.ui.documents.DocumentsViewModel
 import com.spatel.scansign.ui.scanner.ScanConfirmScreen
 import com.spatel.scansign.ui.scanner.ScannerScreen
 import com.spatel.scansign.ui.scanner.ScannerViewModel
 import com.spatel.scansign.ui.settings.SettingsScreen
 import com.spatel.scansign.ui.signer.SignerScreen
 import org.koin.compose.viewmodel.koinViewModel
+import org.koin.core.parameter.parametersOf
 
 @Composable
 fun AppNavigation() {
     val backStack = remember { mutableStateListOf<Any>(DocumentsRoute) }
     val currentRoute = backStack.last()
     val scannerViewModel: ScannerViewModel = koinViewModel()
+    val documentsViewModel: DocumentsViewModel = koinViewModel()
 
     val showBottomBar = currentRoute !is ScannerRoute && currentRoute !is ScanConfirmRoute
 
@@ -73,6 +78,8 @@ fun AppNavigation() {
                     DocumentsScreen(
                         onScanClick = { backStack.add(ScannerRoute) },
                         onSignClick = { backStack.add(SignerRoute) },
+                        onDocumentClick = { id -> backStack.add(DocumentDetailRoute(id)) },
+                        viewModel = documentsViewModel,
                     )
                 }
                 entry<ScannerRoute> {
@@ -102,10 +109,15 @@ fun AppNavigation() {
                     SettingsScreen()
                 }
                 entry<DocumentDetailRoute> { key ->
-                    // Placeholder — wired to real screen in Week 6
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("Document ${key.documentId}")
-                    }
+                    val detailViewModel: DocumentDetailViewModel = koinViewModel(
+                        key = key.documentId,
+                        parameters = { parametersOf(key.documentId) },
+                    )
+                    DocumentDetailScreen(
+                        onBack = { backStack.removeAt(backStack.lastIndex) },
+                        onDocumentDeleted = { backStack.removeAt(backStack.lastIndex) },
+                        viewModel = detailViewModel,
+                    )
                 }
             },
         )
