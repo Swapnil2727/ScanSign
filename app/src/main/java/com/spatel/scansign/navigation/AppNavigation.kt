@@ -22,9 +22,9 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
+import androidx.navigation3.runtime.NavKey
+import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
@@ -40,7 +40,7 @@ import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun AppNavigation() {
-    val backStack = remember { mutableStateListOf<Any>(DocumentsRoute) }
+    val backStack = rememberNavBackStack(DocumentsRoute)
     val currentRoute = backStack.last()
     val scannerViewModel: ScannerViewModel = koinViewModel()
 
@@ -115,7 +115,7 @@ fun AppNavigation() {
 // ── Bottom bar ────────────────────────────────────────────────────────────────
 
 private data class BottomNavItem(
-    val route: Any,
+    val route: NavKey,
     val label: String,
     val selectedIcon: ImageVector,
     val unselectedIcon: ImageVector,
@@ -129,8 +129,8 @@ private val bottomNavItems = listOf(
 
 @Composable
 private fun AppBottomBar(
-    currentRoute: Any,
-    onNavigateTo: (Any) -> Unit,
+    currentRoute: NavKey,
+    onNavigateTo: (NavKey) -> Unit,
 ) {
     NavigationBar {
         // Docs
