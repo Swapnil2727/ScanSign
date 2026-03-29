@@ -83,6 +83,8 @@ import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
+private const val RECENT_LIMIT = 5
+
 // ── Public screen (stateful) ──────────────────────────────────────────────────
 
 @Composable
@@ -95,6 +97,7 @@ fun DocumentsScreen(
     val documents by viewModel.documents.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
     var isSearchActive by remember { mutableStateOf(false) }
+    var showAll by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
@@ -117,6 +120,8 @@ fun DocumentsScreen(
         documents = documents,
         searchQuery = searchQuery,
         isSearchActive = isSearchActive,
+        showAll = showAll,
+        onShowAllToggle = { showAll = !showAll },
         snackbarHostState = snackbarHostState,
         onSearchToggle = {
             isSearchActive = !isSearchActive
@@ -138,6 +143,8 @@ private fun DocumentsContent(
     documents: List<Document>,
     searchQuery: String,
     isSearchActive: Boolean,
+    showAll: Boolean,
+    onShowAllToggle: () -> Unit,
     snackbarHostState: SnackbarHostState,
     onSearchToggle: () -> Unit,
     onSearchQueryChange: (String) -> Unit,
@@ -197,6 +204,12 @@ private fun DocumentsContent(
                 )
             }
 
+            val displayedDocs = when {
+                isSearchActive -> documents
+                showAll -> documents
+                else -> documents.take(RECENT_LIMIT)
+            }
+
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(bottom = 16.dp),
@@ -212,9 +225,13 @@ private fun DocumentsContent(
                 }
                 item {
                     if (isSearchActive) SearchResultsHeader(documents.size)
-                    else RecentDocumentsHeader()
+                    else RecentDocumentsHeader(
+                        totalCount = documents.size,
+                        showAll = showAll,
+                        onToggle = onShowAllToggle,
+                    )
                 }
-                if (documents.isEmpty()) {
+                if (displayedDocs.isEmpty()) {
                     item {
                         if (isSearchActive && searchQuery.isNotBlank()) {
                             NoSearchResultsHint(searchQuery)
@@ -223,7 +240,7 @@ private fun DocumentsContent(
                         }
                     }
                 } else {
-                    items(documents, key = { it.id }) { doc ->
+                    items(displayedDocs, key = { it.id }) { doc ->
                         SwipeableDocumentItem(
                             doc = doc,
                             onDocumentClick = onDocumentClick,
@@ -446,7 +463,11 @@ private fun SearchResultsHeader(resultCount: Int) {
 }
 
 @Composable
-private fun RecentDocumentsHeader() {
+private fun RecentDocumentsHeader(
+    totalCount: Int,
+    showAll: Boolean,
+    onToggle: () -> Unit,
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -459,7 +480,11 @@ private fun RecentDocumentsHeader() {
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
         )
-        TextButton(onClick = { }) { Text("View All") }
+        if (totalCount > RECENT_LIMIT) {
+            TextButton(onClick = onToggle) {
+                Text(if (showAll) "Show less" else "View all ($totalCount)")
+            }
+        }
     }
 }
 
@@ -634,6 +659,8 @@ private fun DocumentsMorningPreview() {
             snackbarHostState = remember { SnackbarHostState() },
             onSearchToggle = {},
             onSearchQueryChange = {},
+            showAll = false,
+            onShowAllToggle = {},
             onScanClick = {},
             onGalleryClick = {},
             onDocumentClick = {},
@@ -653,6 +680,8 @@ private fun DocumentsEmptyPreview() {
             snackbarHostState = remember { SnackbarHostState() },
             onSearchToggle = {},
             onSearchQueryChange = {},
+            showAll = false,
+            onShowAllToggle = {},
             onScanClick = {},
             onGalleryClick = {},
             onDocumentClick = {},
@@ -672,6 +701,8 @@ private fun DocumentsSearchActivePreview() {
             snackbarHostState = remember { SnackbarHostState() },
             onSearchToggle = {},
             onSearchQueryChange = {},
+            showAll = false,
+            onShowAllToggle = {},
             onScanClick = {},
             onGalleryClick = {},
             onDocumentClick = {},
@@ -691,6 +722,8 @@ private fun DocumentsSearchNoResultsPreview() {
             snackbarHostState = remember { SnackbarHostState() },
             onSearchToggle = {},
             onSearchQueryChange = {},
+            showAll = false,
+            onShowAllToggle = {},
             onScanClick = {},
             onGalleryClick = {},
             onDocumentClick = {},
