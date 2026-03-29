@@ -28,9 +28,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
-import androidx.compose.material.icons.filled.Draw
-import androidx.compose.material.icons.filled.FileOpen
-import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.Photo
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.Card
@@ -90,7 +88,7 @@ import java.util.Locale
 @Composable
 fun DocumentsScreen(
     onScanClick: () -> Unit = {},
-    onSignClick: () -> Unit = {},
+    onGalleryClick: () -> Unit = {},
     onDocumentClick: (String) -> Unit = {},
     viewModel: DocumentsViewModel,
 ) {
@@ -126,7 +124,7 @@ fun DocumentsScreen(
         },
         onSearchQueryChange = viewModel::onSearchQueryChange,
         onScanClick = onScanClick,
-        onSignClick = onSignClick,
+        onGalleryClick = onGalleryClick,
         onDocumentClick = onDocumentClick,
         onDeleteRequest = onDeleteRequest,
     )
@@ -144,7 +142,7 @@ private fun DocumentsContent(
     onSearchToggle: () -> Unit,
     onSearchQueryChange: (String) -> Unit,
     onScanClick: () -> Unit,
-    onSignClick: () -> Unit,
+    onGalleryClick: () -> Unit,
     onDocumentClick: (String) -> Unit,
     onDeleteRequest: (String) -> Unit,
 ) {
@@ -208,7 +206,7 @@ private fun DocumentsContent(
                     item {
                         QuickActionsGrid(
                             onScanClick = onScanClick,
-                            onSignClick = onSignClick,
+                            onGalleryClick = onGalleryClick,
                         )
                     }
                 }
@@ -363,50 +361,30 @@ private fun GreetingHeader(documentCount: Int) {
 @Composable
 private fun QuickActionsGrid(
     onScanClick: () -> Unit,
-    onSignClick: () -> Unit,
+    onGalleryClick: () -> Unit,
 ) {
-    Column(modifier = Modifier.padding(horizontal = 20.dp)) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            QuickActionCard(
-                modifier = Modifier.weight(1f),
-                icon = Icons.Filled.CameraAlt,
-                title = "Scan",
-                subtitle = "Document",
-                containerColor = Color(0xFF1565C0),
-                onClick = onScanClick,
-            )
-            QuickActionCard(
-                modifier = Modifier.weight(1f),
-                icon = Icons.Filled.Draw,
-                title = "Sign",
-                subtitle = "Document",
-                containerColor = Color(0xFF00897B),
-                onClick = onSignClick,
-            )
-        }
-        Spacer(modifier = Modifier.height(12.dp))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            QuickActionCard(
-                modifier = Modifier.weight(1f),
-                icon = Icons.Filled.Folder,
-                title = "My",
-                subtitle = "Documents",
-                containerColor = Color(0xFFE65100),
-            )
-            QuickActionCard(
-                modifier = Modifier.weight(1f),
-                icon = Icons.Filled.FileOpen,
-                title = "Import",
-                subtitle = "PDF & Photos",
-                containerColor = Color(0xFF6A1B9A),
-            )
-        }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        QuickActionCard(
+            modifier = Modifier.weight(1f),
+            icon = Icons.Filled.CameraAlt,
+            title = "Scan",
+            subtitle = "Document",
+            containerColor = Color(0xFF1565C0),
+            onClick = onScanClick,
+        )
+        QuickActionCard(
+            modifier = Modifier.weight(1f),
+            icon = Icons.Filled.Photo,
+            title = "Scan from",
+            subtitle = "Gallery",
+            containerColor = Color(0xFF00897B),
+            onClick = onGalleryClick,
+        )
     }
 }
 
@@ -657,7 +635,7 @@ private fun DocumentsMorningPreview() {
             onSearchToggle = {},
             onSearchQueryChange = {},
             onScanClick = {},
-            onSignClick = {},
+            onGalleryClick = {},
             onDocumentClick = {},
             onDeleteRequest = {},
         )
@@ -676,7 +654,7 @@ private fun DocumentsEmptyPreview() {
             onSearchToggle = {},
             onSearchQueryChange = {},
             onScanClick = {},
-            onSignClick = {},
+            onGalleryClick = {},
             onDocumentClick = {},
             onDeleteRequest = {},
         )
@@ -695,7 +673,7 @@ private fun DocumentsSearchActivePreview() {
             onSearchToggle = {},
             onSearchQueryChange = {},
             onScanClick = {},
-            onSignClick = {},
+            onGalleryClick = {},
             onDocumentClick = {},
             onDeleteRequest = {},
         )
@@ -714,7 +692,7 @@ private fun DocumentsSearchNoResultsPreview() {
             onSearchToggle = {},
             onSearchQueryChange = {},
             onScanClick = {},
-            onSignClick = {},
+            onGalleryClick = {},
             onDocumentClick = {},
             onDeleteRequest = {},
         )

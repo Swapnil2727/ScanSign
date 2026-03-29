@@ -43,6 +43,7 @@ dependencies {
     implementation(projects.core.data)
     implementation(projects.core.datastore)
     implementation(projects.core.di)
+    implementation(projects.core.pdf)
     implementation(projects.core.ui) // Compose BOM + Material3 exposed transitively
 
     implementation(libs.androidx.core.ktx)

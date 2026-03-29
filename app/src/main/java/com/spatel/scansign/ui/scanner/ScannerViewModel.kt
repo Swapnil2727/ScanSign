@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.spatel.scansign.core.data.SaveScannedDocumentUseCase
 import com.spatel.scansign.core.model.Document
+import com.spatel.scansign.core.pdf.ImagesToPdfConverter
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -12,6 +13,7 @@ import kotlinx.coroutines.launch
 
 class ScannerViewModel(
     private val saveDocument: SaveScannedDocumentUseCase,
+    private val imagesToPdfConverter: ImagesToPdfConverter,
 ) : ViewModel() {
 
     private val _scanResult = MutableStateFlow<ScanResult?>(null)
@@ -28,10 +30,28 @@ class ScannerViewModel(
         val result = _scanResult.value ?: return
         viewModelScope.launch {
             _saveState.value = SaveState.Saving
-            val outcome = saveDocument(result.pdfUri, result.pageUris, title)
+            val outcome = saveDocument(result.resolvedPdfUri(), result.pageUris, title)
             _saveState.value = outcome.fold(
                 onSuccess = { SaveState.Success(it) },
                 onFailure = { SaveState.Error(it.message ?: "Save failed") },
+            )
+        }
+    }
+
+    fun onGalleryImagesSelected(imageUris: List<Uri>) {
+        _scanResult.value = null
+        _saveState.value = SaveState.Idle
+        viewModelScope.launch {
+            imagesToPdfConverter.convert(imageUris).fold(
+                onSuccess = { pdfFile ->
+                    _scanResult.value = ScanResult(
+                        pdfFile = pdfFile,
+                        pageUris = imageUris,
+                    )
+                },
+                onFailure = {
+                    _saveState.value = SaveState.Error(it.message ?: "Import failed")
+                },
             )
         }
     }
@@ -42,7 +62,13 @@ class ScannerViewModel(
     }
 }
 
-data class ScanResult(val pdfUri: Uri, val pageUris: List<Uri>)
+data class ScanResult(
+    val pdfUri: Uri? = null,
+    val pdfFile: java.io.File? = null,
+    val pageUris: List<Uri>,
+) {
+    fun resolvedPdfUri(): Uri = pdfUri ?: Uri.fromFile(pdfFile!!)
+}
 
 sealed interface SaveState {
     data object Idle : SaveState

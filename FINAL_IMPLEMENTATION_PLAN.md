@@ -9,7 +9,7 @@
 ## Strategy: Two-Phase Delivery
 
 **Phase 1 (Weeks 1–8): PDF Scanner MVP**
-Build a fully functional, shippable PDF scanner app. Use ML Kit Document Scanner for capture (edge detection, perspective correction, multi-page, PDF output — all built-in). Manage documents locally and share them. AdMob ads live from day one.
+Build a fully functional, shippable PDF scanner app. Use ML Kit Document Scanner for capture (edge detection, perspective correction, multi-page, PDF output — all built-in). Manage documents locally and share them.
 
 **Phase 2 (Weeks 9–15): Signing Capabilities**
 Layer digital, drawn, and image signatures on top of the completed PDF scanner. Signing is additive — the core scanner app is not disrupted.
@@ -172,7 +172,17 @@ Feature-based modules with layer separation:
 
 ### Week 7: Phase 1 Polish + Testing
 
-**7.1 Polish**
+**7.0 QuickActions + Nav Cleanup (PR 7.A)** ✅
+- Replace 4-card `QuickActionsGrid` with 2 focused cards:
+  - **Scan Document** (CameraAlt, `#1565C0`) → ML Kit camera mode (`ScannerRoute`)
+  - **Scan from Gallery** (Photo, `#00897B`) → system photo picker → PDF via PDFBox (`GalleryImportRoute`)
+- Remove Sign card and My Documents card (Sign is Phase 2; My Docs is redundant)
+- Remove Sign tab from bottom nav → 3-tab bar: Docs · Scan · Settings
+- `GalleryImportRoute`: launches `PickMultipleVisualMedia` immediately; `ImagesToPdfConverter` (`:core:pdf`) decodes each image with EXIF rotation + 1600px downsampling, encodes as JPEG pages via PDFBox; result flows through shared `ScannerViewModel` → existing `ScanConfirmScreen` save flow unchanged
+- `PdfCopier` extended to handle `file://` URIs (used for gallery-generated PDFs)
+- `app/build.gradle.kts`: added `projects.core.pdf` dependency
+
+**7.1 Polish (PR 7.B)**
 - Edge-to-edge on all screens
 - Empty states: no documents yet, first-time user onboarding
 - Error states: ML Kit unavailable, storage full, permission denied
@@ -201,7 +211,6 @@ Feature-based modules with layer separation:
 - Generate signed AAB with release keystore
 - Store listing: title, description, screenshots (scanner-focused)
 - Privacy policy (local storage only, no data leaves device)
-- AdMob app ID registered, production ad unit IDs configured
 - Google Play Console setup, content rating questionnaire
 
 **8.2 Beta → Public**
@@ -303,7 +312,7 @@ Feature-based modules with layer separation:
 
 - **ML Kit Document Scanner over CameraX**: Eliminates 2–3 weeks of camera work. Google Drive-quality scanning in ~50 lines. ML Kit's job ends at the PDF file — signing is identical either way. Requires GMS (irrelevant for Play Store).
 - **Apache PDFBox Android over iText 7**: iText 7 is AGPL — incompatible with a commercial closed-source Play Store app without a paid licence. PDFBox is Apache 2.0, free for commercial use, and fully capable of opening and modifying existing PDFs for signature embedding.
-- **Ads are planned, not optional**: AdMob integration in Week 6, live at Phase 1 launch. All library choices verified as Apache 2.0 / MIT — no AGPL or GPL dependencies.
+- **Ads are planned, not optional**: AdMob integration in Week 12 (Phase 2). Phase 1 ships clean — no ads. All library choices verified as Apache 2.0 / MIT — no AGPL or GPL dependencies.
 - **Two-phase delivery**: PDF Scanner ships first (Week 8); Signing is additive in Phase 2.
 - **Room deferred to Week 4**: Built alongside the Scanner feature — entities shaped by real usage.
 - **Navigation 3**: Type-safe `@Serializable` routes + `NavDisplay` + `SnapshotStateList` back stack.
@@ -332,5 +341,5 @@ Feature-based modules with layer separation:
 
 ---
 
-**Version**: 4.0
-**Status**: In Progress — Week 2 Complete (2.1 Core UI ✅, 2.2 Navigation 3 ✅)
+**Version**: 5.0
+**Status**: Week 6 Complete, Week 7 In Progress
