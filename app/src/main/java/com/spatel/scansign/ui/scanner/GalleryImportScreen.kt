@@ -8,9 +8,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -45,11 +47,6 @@ fun GalleryImportScreen(
         if (scanResult != null) onImportComplete()
     }
 
-    // Navigate back on conversion error
-    LaunchedEffect(saveState) {
-        if (saveState is SaveState.Error) onBack()
-    }
-
     // Launch picker only if we don't already have a pending result
     LaunchedEffect(Unit) {
         if (viewModel.scanResult.value == null) {
@@ -57,7 +54,27 @@ fun GalleryImportScreen(
         }
     }
 
-    GalleryImportLoadingContent()
+    if (saveState is SaveState.Error) {
+        GalleryImportErrorDialog(
+            message = (saveState as SaveState.Error).message,
+            onDismiss = {
+                viewModel.clearScanResult()
+                onBack()
+            },
+        )
+    } else {
+        GalleryImportLoadingContent()
+    }
+}
+
+@Composable
+private fun GalleryImportErrorDialog(message: String, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Import failed") },
+        text = { Text(message) },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("OK") } },
+    )
 }
 
 @Composable
@@ -83,5 +100,16 @@ private fun GalleryImportLoadingContent(modifier: Modifier = Modifier) {
 private fun GalleryImportLoadingPreview() {
     ScanSignTheme(dynamicColor = false) {
         GalleryImportLoadingContent()
+    }
+}
+
+@ThemePreviews
+@Composable
+private fun GalleryImportErrorDialogPreview() {
+    ScanSignTheme(dynamicColor = false) {
+        GalleryImportErrorDialog(
+            message = "Failed to convert images: out of memory",
+            onDismiss = {},
+        )
     }
 }
