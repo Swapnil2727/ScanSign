@@ -28,9 +28,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
-import androidx.compose.material.icons.filled.Draw
-import androidx.compose.material.icons.filled.FileOpen
-import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.Photo
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.Card
@@ -85,18 +83,21 @@ import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
+private const val RECENT_LIMIT = 5
+
 // ── Public screen (stateful) ──────────────────────────────────────────────────
 
 @Composable
 fun DocumentsScreen(
     onScanClick: () -> Unit = {},
-    onSignClick: () -> Unit = {},
+    onGalleryClick: () -> Unit = {},
     onDocumentClick: (String) -> Unit = {},
     viewModel: DocumentsViewModel,
 ) {
     val documents by viewModel.documents.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
     var isSearchActive by remember { mutableStateOf(false) }
+    var showAll by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
@@ -119,6 +120,8 @@ fun DocumentsScreen(
         documents = documents,
         searchQuery = searchQuery,
         isSearchActive = isSearchActive,
+        showAll = showAll,
+        onShowAllToggle = { showAll = !showAll },
         snackbarHostState = snackbarHostState,
         onSearchToggle = {
             isSearchActive = !isSearchActive
@@ -126,7 +129,7 @@ fun DocumentsScreen(
         },
         onSearchQueryChange = viewModel::onSearchQueryChange,
         onScanClick = onScanClick,
-        onSignClick = onSignClick,
+        onGalleryClick = onGalleryClick,
         onDocumentClick = onDocumentClick,
         onDeleteRequest = onDeleteRequest,
     )
@@ -140,11 +143,13 @@ private fun DocumentsContent(
     documents: List<Document>,
     searchQuery: String,
     isSearchActive: Boolean,
+    showAll: Boolean,
+    onShowAllToggle: () -> Unit,
     snackbarHostState: SnackbarHostState,
     onSearchToggle: () -> Unit,
     onSearchQueryChange: (String) -> Unit,
     onScanClick: () -> Unit,
-    onSignClick: () -> Unit,
+    onGalleryClick: () -> Unit,
     onDocumentClick: (String) -> Unit,
     onDeleteRequest: (String) -> Unit,
 ) {
@@ -199,6 +204,12 @@ private fun DocumentsContent(
                 )
             }
 
+            val displayedDocs = when {
+                isSearchActive -> documents
+                showAll -> documents
+                else -> documents.take(RECENT_LIMIT)
+            }
+
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(bottom = 16.dp),
@@ -208,15 +219,19 @@ private fun DocumentsContent(
                     item {
                         QuickActionsGrid(
                             onScanClick = onScanClick,
-                            onSignClick = onSignClick,
+                            onGalleryClick = onGalleryClick,
                         )
                     }
                 }
                 item {
                     if (isSearchActive) SearchResultsHeader(documents.size)
-                    else RecentDocumentsHeader()
+                    else RecentDocumentsHeader(
+                        totalCount = documents.size,
+                        showAll = showAll,
+                        onToggle = onShowAllToggle,
+                    )
                 }
-                if (documents.isEmpty()) {
+                if (displayedDocs.isEmpty()) {
                     item {
                         if (isSearchActive && searchQuery.isNotBlank()) {
                             NoSearchResultsHint(searchQuery)
@@ -225,7 +240,7 @@ private fun DocumentsContent(
                         }
                     }
                 } else {
-                    items(documents, key = { it.id }) { doc ->
+                    items(displayedDocs, key = { it.id }) { doc ->
                         SwipeableDocumentItem(
                             doc = doc,
                             onDocumentClick = onDocumentClick,
@@ -363,50 +378,30 @@ private fun GreetingHeader(documentCount: Int) {
 @Composable
 private fun QuickActionsGrid(
     onScanClick: () -> Unit,
-    onSignClick: () -> Unit,
+    onGalleryClick: () -> Unit,
 ) {
-    Column(modifier = Modifier.padding(horizontal = 20.dp)) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            QuickActionCard(
-                modifier = Modifier.weight(1f),
-                icon = Icons.Filled.CameraAlt,
-                title = "Scan",
-                subtitle = "Document",
-                containerColor = Color(0xFF1565C0),
-                onClick = onScanClick,
-            )
-            QuickActionCard(
-                modifier = Modifier.weight(1f),
-                icon = Icons.Filled.Draw,
-                title = "Sign",
-                subtitle = "Document",
-                containerColor = Color(0xFF00897B),
-                onClick = onSignClick,
-            )
-        }
-        Spacer(modifier = Modifier.height(12.dp))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            QuickActionCard(
-                modifier = Modifier.weight(1f),
-                icon = Icons.Filled.Folder,
-                title = "My",
-                subtitle = "Documents",
-                containerColor = Color(0xFFE65100),
-            )
-            QuickActionCard(
-                modifier = Modifier.weight(1f),
-                icon = Icons.Filled.FileOpen,
-                title = "Import",
-                subtitle = "PDF & Photos",
-                containerColor = Color(0xFF6A1B9A),
-            )
-        }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        QuickActionCard(
+            modifier = Modifier.weight(1f),
+            icon = Icons.Filled.CameraAlt,
+            title = "Scan",
+            subtitle = "Document",
+            containerColor = Color(0xFF1565C0),
+            onClick = onScanClick,
+        )
+        QuickActionCard(
+            modifier = Modifier.weight(1f),
+            icon = Icons.Filled.Photo,
+            title = "Scan from",
+            subtitle = "Gallery",
+            containerColor = Color(0xFF00897B),
+            onClick = onGalleryClick,
+        )
     }
 }
 
@@ -468,7 +463,11 @@ private fun SearchResultsHeader(resultCount: Int) {
 }
 
 @Composable
-private fun RecentDocumentsHeader() {
+private fun RecentDocumentsHeader(
+    totalCount: Int,
+    showAll: Boolean,
+    onToggle: () -> Unit,
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -481,7 +480,11 @@ private fun RecentDocumentsHeader() {
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
         )
-        TextButton(onClick = { }) { Text("View All") }
+        if (totalCount > RECENT_LIMIT) {
+            TextButton(onClick = onToggle) {
+                Text(if (showAll) "Show less" else "View all ($totalCount)")
+            }
+        }
     }
 }
 
@@ -656,8 +659,10 @@ private fun DocumentsMorningPreview() {
             snackbarHostState = remember { SnackbarHostState() },
             onSearchToggle = {},
             onSearchQueryChange = {},
+            showAll = false,
+            onShowAllToggle = {},
             onScanClick = {},
-            onSignClick = {},
+            onGalleryClick = {},
             onDocumentClick = {},
             onDeleteRequest = {},
         )
@@ -675,8 +680,10 @@ private fun DocumentsEmptyPreview() {
             snackbarHostState = remember { SnackbarHostState() },
             onSearchToggle = {},
             onSearchQueryChange = {},
+            showAll = false,
+            onShowAllToggle = {},
             onScanClick = {},
-            onSignClick = {},
+            onGalleryClick = {},
             onDocumentClick = {},
             onDeleteRequest = {},
         )
@@ -694,8 +701,10 @@ private fun DocumentsSearchActivePreview() {
             snackbarHostState = remember { SnackbarHostState() },
             onSearchToggle = {},
             onSearchQueryChange = {},
+            showAll = false,
+            onShowAllToggle = {},
             onScanClick = {},
-            onSignClick = {},
+            onGalleryClick = {},
             onDocumentClick = {},
             onDeleteRequest = {},
         )
@@ -713,8 +722,10 @@ private fun DocumentsSearchNoResultsPreview() {
             snackbarHostState = remember { SnackbarHostState() },
             onSearchToggle = {},
             onSearchQueryChange = {},
+            showAll = false,
+            onShowAllToggle = {},
             onScanClick = {},
-            onSignClick = {},
+            onGalleryClick = {},
             onDocumentClick = {},
             onDeleteRequest = {},
         )

@@ -4,11 +4,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
-import androidx.compose.material.icons.filled.Draw
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.CameraAlt
-import androidx.compose.material.icons.outlined.Draw
 import androidx.compose.material.icons.outlined.FolderOpen
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Icon
@@ -21,18 +19,17 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.unit.dp
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.ui.NavDisplay
-import com.spatel.scansign.ui.documents.DocumentDetailViewModel
 import com.spatel.scansign.ui.documents.DocumentDetailScreen
+import com.spatel.scansign.ui.documents.DocumentDetailViewModel
 import com.spatel.scansign.ui.documents.DocumentsScreen
 import com.spatel.scansign.ui.documents.DocumentsViewModel
+import com.spatel.scansign.ui.scanner.GalleryImportScreen
 import com.spatel.scansign.ui.scanner.ScanConfirmScreen
 import com.spatel.scansign.ui.scanner.ScannerScreen
 import com.spatel.scansign.ui.scanner.ScannerViewModel
 import com.spatel.scansign.ui.settings.SettingsScreen
-import com.spatel.scansign.ui.signer.SignerScreen
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 
@@ -43,7 +40,9 @@ fun AppNavigation() {
     val scannerViewModel: ScannerViewModel = koinViewModel()
     val documentsViewModel: DocumentsViewModel = koinViewModel()
 
-    val showBottomBar = currentRoute !is ScannerRoute && currentRoute !is ScanConfirmRoute
+    val showBottomBar = currentRoute !is ScannerRoute
+        && currentRoute !is ScanConfirmRoute
+        && currentRoute !is GalleryImportRoute
 
     Scaffold(
         bottomBar = {
@@ -52,9 +51,11 @@ fun AppNavigation() {
                     currentRoute = currentRoute,
                     onNavigateTo = { destination ->
                         backStack.clear()
-                        // ScannerRoute is transient — always keep DocumentsRoute as its parent
-                        // so pressing back from the scanner returns to the documents list.
-                        if (destination is ScannerRoute) backStack.add(DocumentsRoute)
+                        // Transient screens always keep DocumentsRoute as their parent
+                        // so pressing back returns to the document list.
+                        if (destination is ScannerRoute || destination is GalleryImportRoute) {
+                            backStack.add(DocumentsRoute)
+                        }
                         backStack.add(destination)
                     },
                 )
@@ -71,7 +72,7 @@ fun AppNavigation() {
                 entry<DocumentsRoute> {
                     DocumentsScreen(
                         onScanClick = { backStack.add(ScannerRoute) },
-                        onSignClick = { backStack.add(SignerRoute) },
+                        onGalleryClick = { backStack.add(GalleryImportRoute) },
                         onDocumentClick = { id -> backStack.add(DocumentDetailRoute(id)) },
                         viewModel = documentsViewModel,
                     )
@@ -83,11 +84,18 @@ fun AppNavigation() {
                         viewModel = scannerViewModel,
                     )
                 }
+                entry<GalleryImportRoute> {
+                    GalleryImportScreen(
+                        onBack = { backStack.removeAt(backStack.lastIndex) },
+                        onImportComplete = { backStack.add(ScanConfirmRoute) },
+                        viewModel = scannerViewModel,
+                    )
+                }
                 entry<ScanConfirmRoute> {
                     ScanConfirmScreen(
                         onDiscard = {
                             backStack.removeAt(backStack.lastIndex) // ScanConfirmRoute
-                            backStack.removeAt(backStack.lastIndex) // ScannerRoute
+                            backStack.removeAt(backStack.lastIndex) // ScannerRoute or GalleryImportRoute
                         },
                         onSaveConfirmed = {
                             backStack.clear()
@@ -95,9 +103,6 @@ fun AppNavigation() {
                         },
                         viewModel = scannerViewModel,
                     )
-                }
-                entry<SignerRoute> {
-                    SignerScreen()
                 }
                 entry<SettingsRoute> {
                     SettingsScreen()
@@ -130,7 +135,6 @@ private data class BottomNavItem(
 private val bottomNavItems = listOf(
     BottomNavItem(DocumentsRoute, "Docs", Icons.Filled.FolderOpen, Icons.Outlined.FolderOpen),
     BottomNavItem(ScannerRoute, "Scan", Icons.Filled.CameraAlt, Icons.Outlined.CameraAlt),
-    BottomNavItem(SignerRoute, "Sign", Icons.Filled.Draw, Icons.Outlined.Draw),
     BottomNavItem(SettingsRoute, "Settings", Icons.Filled.Settings, Icons.Outlined.Settings),
 )
 

@@ -4,7 +4,9 @@ import android.net.Uri
 import com.spatel.scansign.core.data.SaveScannedDocumentUseCase
 import com.spatel.scansign.core.model.Document
 import com.spatel.scansign.core.model.DocumentStatus
+import com.spatel.scansign.core.pdf.ImagesToPdfConverter
 import com.spatel.scansign.util.MainDispatcherRule
+import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
@@ -13,6 +15,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
+import java.io.File
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ScannerViewModelTest {
@@ -37,9 +40,12 @@ class ScannerViewModelTest {
 
     private fun viewModelWith(
         saveResult: Result<Document> = Result.success(fakeDocument),
+        convertResult: Result<File> = Result.success(mockk()),
     ): ScannerViewModel {
         val useCase = SaveScannedDocumentUseCase { _, _, _ -> saveResult }
-        return ScannerViewModel(useCase)
+        val converter = mockk<ImagesToPdfConverter>()
+        coEvery { converter.convert(any()) } returns convertResult
+        return ScannerViewModel(useCase, converter)
     }
 
     // ── Scan result state ─────────────────────────────────────────────────────
@@ -55,7 +61,7 @@ class ScannerViewModelTest {
         vm.onScanSuccess(pdfUri, listOf(pageUri))
 
         val result = vm.scanResult.value
-        assertEquals(pdfUri, result?.pdfUri)
+        assertEquals(pdfUri, result?.resolvedPdfUri())
         assertEquals(listOf(pageUri), result?.pageUris)
     }
 
@@ -92,7 +98,7 @@ class ScannerViewModelTest {
         vm.onScanSuccess(pdfUri, emptyList())
         vm.onScanSuccess(secondPdf, emptyList())
 
-        assertEquals(secondPdf, vm.scanResult.value?.pdfUri)
+        assertEquals(secondPdf, vm.scanResult.value?.resolvedPdfUri())
     }
 
     // ── Save state ────────────────────────────────────────────────────────────
@@ -133,5 +139,43 @@ class ScannerViewModelTest {
         vm.save("My Scan")
 
         assertTrue(vm.saveState.value is SaveState.Idle)
+    }
+
+    // ── Gallery import ────────────────────────────────────────────────────────
+
+    @Test
+    fun `onGalleryImagesSelected sets scanResult with imageUris as pageUris on success`() = runTest {
+        val fakePdfFile: File = mockk(relaxed = true)
+        val imageUri1: Uri = mockk()
+        val imageUri2: Uri = mockk()
+        val vm = viewModelWith(convertResult = Result.success(fakePdfFile))
+
+        vm.onGalleryImagesSelected(listOf(imageUri1, imageUri2))
+
+        val result = vm.scanResult.value
+        assertEquals(listOf(imageUri1, imageUri2), result?.pageUris)
+    }
+
+    @Test
+    fun `onGalleryImagesSelected clears previous scanResult before converting`() = runTest {
+        val vm = viewModelWith()
+        vm.onScanSuccess(pdfUri, listOf(pageUri))
+
+        vm.onGalleryImagesSelected(listOf(pageUri))
+
+        // scanResult is replaced — not stale from prior ML Kit scan
+        val result = vm.scanResult.value
+        assertEquals(listOf(pageUri), result?.pageUris)
+    }
+
+    @Test
+    fun `onGalleryImagesSelected sets SaveState Error on conversion failure`() = runTest {
+        val vm = viewModelWith(convertResult = Result.failure(RuntimeException("Out of memory")))
+
+        vm.onGalleryImagesSelected(listOf(pageUri))
+
+        val state = vm.saveState.value
+        assertTrue(state is SaveState.Error)
+        assertEquals("Out of memory", (state as SaveState.Error).message)
     }
 }

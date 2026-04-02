@@ -43,6 +43,7 @@ dependencies {
     implementation(projects.core.data)
     implementation(projects.core.datastore)
     implementation(projects.core.di)
+    implementation(projects.core.pdf)
     implementation(projects.core.ui) // Compose BOM + Material3 exposed transitively
 
     implementation(libs.androidx.core.ktx)
@@ -66,6 +67,7 @@ dependencies {
     testImplementation(libs.junit)
     testImplementation(libs.mockk)
     testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.androidx.datastore.preferences)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
