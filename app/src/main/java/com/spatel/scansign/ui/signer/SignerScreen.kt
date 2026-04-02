@@ -22,13 +22,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Draw
-import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Photo
 import androidx.compose.material.icons.outlined.Draw
-import androidx.compose.material.icons.outlined.Key
 import androidx.compose.material.icons.outlined.Photo
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -53,7 +50,6 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -93,11 +89,9 @@ fun SignerScreen(viewModel: SignerViewModel = koinViewModel()) {
     val selectedImageUri by viewModel.selectedImageUri.collectAsStateWithLifecycle()
     val savedSignatures by viewModel.savedSignatures.collectAsStateWithLifecycle()
     val saveState by viewModel.saveState.collectAsStateWithLifecycle()
-    val isGeneratingKey by viewModel.isGeneratingKey.collectAsStateWithLifecycle()
 
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // Show snackbar on success or error
     LaunchedEffect(saveState) {
         when (saveState) {
             is SignerSaveState.Success ->
@@ -116,7 +110,6 @@ fun SignerScreen(viewModel: SignerViewModel = koinViewModel()) {
         selectedImageUri = selectedImageUri,
         savedSignatures = savedSignatures,
         isSaving = saveState is SignerSaveState.Saving,
-        isGeneratingKey = isGeneratingKey,
         snackbarHostState = snackbarHostState,
         onTabSelected = viewModel::selectTab,
         onStrokeStart = viewModel::startStroke,
@@ -127,7 +120,6 @@ fun SignerScreen(viewModel: SignerViewModel = koinViewModel()) {
         onSaveDrawn = { name, w, h -> viewModel.saveDrawnSignature(name, w, h) },
         onImageSelected = viewModel::onImageSelected,
         onSaveImage = viewModel::saveImageSignature,
-        onCreateDigital = viewModel::createDigitalSignature,
         onDeleteSignature = viewModel::deleteSignature,
     )
 }
@@ -143,7 +135,6 @@ private fun SignerContent(
     selectedImageUri: android.net.Uri?,
     savedSignatures: List<Signature>,
     isSaving: Boolean,
-    isGeneratingKey: Boolean,
     snackbarHostState: SnackbarHostState,
     onTabSelected: (SignerTab) -> Unit,
     onStrokeStart: (Offset) -> Unit,
@@ -154,13 +145,10 @@ private fun SignerContent(
     onSaveDrawn: (name: String, widthPx: Int, heightPx: Int) -> Unit,
     onImageSelected: (android.net.Uri) -> Unit,
     onSaveImage: (name: String) -> Unit,
-    onCreateDigital: (name: String) -> Unit,
     onDeleteSignature: (Signature) -> Unit,
 ) {
     Scaffold(
-        topBar = {
-            TopAppBar(title = { Text("Signatures") })
-        },
+        topBar = { TopAppBar(title = { Text("Signatures") }) },
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { innerPadding ->
         Column(
@@ -171,7 +159,6 @@ private fun SignerContent(
             val tabs = listOf(
                 TabItem(SignerTab.DRAW, "Draw", Icons.Filled.Draw, Icons.Outlined.Draw),
                 TabItem(SignerTab.IMAGE, "Image", Icons.Filled.Photo, Icons.Outlined.Photo),
-                TabItem(SignerTab.DIGITAL, "Digital", Icons.Filled.Key, Icons.Outlined.Key),
             )
             TabRow(selectedTabIndex = selectedTab.ordinal) {
                 tabs.forEach { tab ->
@@ -212,19 +199,13 @@ private fun SignerContent(
                             onImageSelected = onImageSelected,
                             onSave = onSaveImage,
                         )
-                        SignerTab.DIGITAL -> DigitalTab(
-                            isGeneratingKey = isGeneratingKey,
-                            onCreateKey = onCreateDigital,
-                        )
                     }
                 }
 
-                // Saved signatures section — filtered by current tab's type
                 val filtered = savedSignatures.filter {
                     when (selectedTab) {
                         SignerTab.DRAW -> it.type == SignatureType.DRAWN
                         SignerTab.IMAGE -> it.type == SignatureType.IMAGE
-                        SignerTab.DIGITAL -> it.type == SignatureType.DIGITAL
                     }
                 }
                 if (filtered.isNotEmpty()) {
@@ -266,7 +247,6 @@ private fun DrawTab(
     val hasStrokes = completedStrokes.isNotEmpty() || currentStroke.isNotEmpty()
 
     Column(modifier = Modifier.padding(16.dp)) {
-        // Drawing canvas
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -285,11 +265,7 @@ private fun DrawTab(
                 },
         ) {
             Canvas(modifier = Modifier.fillMaxSize()) {
-                val strokeStyle = Stroke(
-                    width = 6f,
-                    cap = StrokeCap.Round,
-                    join = StrokeJoin.Round,
-                )
+                val strokeStyle = Stroke(width = 6f, cap = StrokeCap.Round, join = StrokeJoin.Round)
                 (completedStrokes + if (currentStroke.isNotEmpty()) listOf(currentStroke) else emptyList())
                     .forEach { stroke ->
                         drawPath(stroke.toComposePath(), color = Color.Black, style = strokeStyle)
@@ -307,7 +283,6 @@ private fun DrawTab(
 
         Spacer(Modifier.height(12.dp))
 
-        // Stroke action row
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -349,7 +324,7 @@ private fun List<Offset>.toComposePath(): Path {
     if (isEmpty()) return path
     path.moveTo(first().x, first().y)
     if (size == 1) {
-        path.lineTo(first().x + 0.01f, first().y + 0.01f) // force paint for single tap
+        path.lineTo(first().x + 0.01f, first().y + 0.01f)
         return path
     }
     for (i in 0 until size - 1) {
@@ -457,70 +432,6 @@ private fun ImageTab(
     }
 }
 
-// ── Digital tab ───────────────────────────────────────────────────────────────
-
-@Composable
-private fun DigitalTab(
-    isGeneratingKey: Boolean,
-    onCreateKey: (name: String) -> Unit,
-) {
-    var showCreateDialog by remember { mutableStateOf(false) }
-
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp),
-    ) {
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text(
-                    "Digital signatures",
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer,
-                )
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    "Creates an RSA-2048 key pair stored in Android Keystore. " +
-                        "The private key never leaves your device.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f),
-                )
-            }
-        }
-        Spacer(Modifier.height(12.dp))
-        FilledTonalButton(
-            onClick = { showCreateDialog = true },
-            enabled = !isGeneratingKey,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            if (isGeneratingKey) {
-                CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
-                Spacer(Modifier.width(8.dp))
-                Text("Generating…")
-            } else {
-                Icon(Icons.Filled.Add, contentDescription = null)
-                Spacer(Modifier.width(8.dp))
-                Text("Create digital signature")
-            }
-        }
-    }
-
-    if (showCreateDialog) {
-        SaveSignatureDialog(
-            title = "New digital signature",
-            placeholder = "e.g. Work, Personal",
-            onDismiss = { showCreateDialog = false },
-            onConfirm = { name ->
-                showCreateDialog = false
-                onCreateKey(name)
-            },
-        )
-    }
-}
-
 // ── Saved signature item ──────────────────────────────────────────────────────
 
 @Composable
@@ -540,48 +451,23 @@ private fun SavedSignatureItem(signature: Signature, onDelete: () -> Unit) {
                 .padding(12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            // Thumbnail for drawn/image signatures
-            if (signature.bitmapPath != null) {
-                AsyncImage(
-                    model = File(signature.bitmapPath),
-                    contentDescription = null,
-                    contentScale = ContentScale.Fit,
-                    modifier = Modifier
-                        .size(56.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(Color.White)
-                        .border(0.5.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f), RoundedCornerShape(8.dp)),
-                )
-            } else {
-                Box(
-                    modifier = Modifier
-                        .size(56.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(MaterialTheme.colorScheme.secondaryContainer),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        Icons.Filled.Key,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                        modifier = Modifier.size(28.dp),
-                    )
-                }
-            }
+            AsyncImage(
+                model = signature.bitmapPath?.let { File(it) },
+                contentDescription = null,
+                contentScale = ContentScale.Fit,
+                modifier = Modifier
+                    .size(56.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(Color.White)
+                    .border(0.5.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f), RoundedCornerShape(8.dp)),
+            )
 
             Spacer(Modifier.width(12.dp))
 
             Column(modifier = Modifier.weight(1f)) {
+                Text(signature.name, style = MaterialTheme.typography.bodyLarge)
                 Text(
-                    signature.name,
-                    style = MaterialTheme.typography.bodyLarge,
-                )
-                Text(
-                    when (signature.type) {
-                        SignatureType.DRAWN -> "Drawn · ${signature.createdAt.formatDate()}"
-                        SignatureType.IMAGE -> "Image · ${signature.createdAt.formatDate()}"
-                        SignatureType.DIGITAL -> "RSA-2048 · ${signature.createdAt.formatDate()}"
-                    },
+                    "${if (signature.type == SignatureType.DRAWN) "Drawn" else "Image"} · ${signature.createdAt.formatDate()}",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -612,20 +498,18 @@ private fun SavedSignatureItem(signature: Signature, onDelete: () -> Unit) {
 
 @Composable
 private fun SaveSignatureDialog(
-    title: String = "Name this signature",
-    placeholder: String = "e.g. My Signature",
     onDismiss: () -> Unit,
     onConfirm: (String) -> Unit,
 ) {
     var name by remember { mutableStateOf("") }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(title) },
+        title = { Text("Name this signature") },
         text = {
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
-                placeholder = { Text(placeholder) },
+                placeholder = { Text("e.g. My Signature") },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -681,13 +565,5 @@ private fun ImageTabEmptyPreview() {
             onImageSelected = {},
             onSave = {},
         )
-    }
-}
-
-@ThemePreviews
-@Composable
-private fun DigitalTabPreview() {
-    ScanSignTheme(dynamicColor = false) {
-        DigitalTab(isGeneratingKey = false, onCreateKey = {})
     }
 }

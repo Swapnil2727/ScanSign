@@ -6,5 +6,5 @@ import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 
 val signerModule = module {
-    viewModel { SignerViewModel(get(), get(), androidContext()) }
+    viewModel { SignerViewModel(get(), androidContext()) }
 }

@@ -13,7 +13,6 @@ import androidx.lifecycle.viewModelScope
 import com.spatel.scansign.core.data.SignatureRepository
 import com.spatel.scansign.core.model.Signature
 import com.spatel.scansign.core.model.SignatureType
-import com.spatel.scansign.core.signing.KeystoreManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -24,7 +23,7 @@ import kotlinx.coroutines.launch
 import java.io.File
 import java.util.UUID
 
-enum class SignerTab { DRAW, IMAGE, DIGITAL }
+enum class SignerTab { DRAW, IMAGE }
 
 sealed interface SignerSaveState {
     data object Idle : SignerSaveState
@@ -34,7 +33,6 @@ sealed interface SignerSaveState {
 }
 
 class SignerViewModel(
-    private val keystoreManager: KeystoreManager,
     private val signatureRepository: SignatureRepository,
     private val context: Context,
 ) : ViewModel() {
@@ -48,7 +46,7 @@ class SignerViewModel(
         _selectedTab.value = tab
     }
 
-    // ── Saved signatures (all types, live from DB) ────────────────────────
+    // ── Saved signatures (live from DB) ───────────────────────────────────────
 
     val savedSignatures: StateFlow<List<Signature>> = signatureRepository.getAll()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
@@ -95,36 +93,6 @@ class SignerViewModel(
 
     fun onImageSelected(uri: Uri) {
         _selectedImageUri.value = uri
-    }
-
-    // ── Digital tab ───────────────────────────────────────────────────────────
-
-    private val _isGeneratingKey = MutableStateFlow(false)
-    val isGeneratingKey: StateFlow<Boolean> = _isGeneratingKey.asStateFlow()
-
-    fun createDigitalSignature(name: String) {
-        if (name.isBlank()) return
-        viewModelScope.launch {
-            _isGeneratingKey.value = true
-            _saveState.value = SignerSaveState.Saving
-            runCatching {
-                val alias = "scansign_${UUID.randomUUID()}"
-                keystoreManager.generateKeyPair(alias)
-                val signature = Signature(
-                    id = UUID.randomUUID().toString(),
-                    name = name.trim(),
-                    type = SignatureType.DIGITAL,
-                    certificateAlias = alias,
-                    createdAt = System.currentTimeMillis(),
-                )
-                signatureRepository.save(signature).getOrThrow()
-                signature
-            }.fold(
-                onSuccess = { _saveState.value = SignerSaveState.Success(it) },
-                onFailure = { _saveState.value = SignerSaveState.Error(it.message ?: "Key generation failed") },
-            )
-            _isGeneratingKey.value = false
-        }
     }
 
     // ── Save state ────────────────────────────────────────────────────────────
@@ -199,15 +167,7 @@ class SignerViewModel(
 
     fun deleteSignature(signature: Signature) {
         viewModelScope.launch {
-            // Clean up keystore entry for digital signatures
-            val alias = signature.certificateAlias
-            if (signature.type == SignatureType.DIGITAL && alias != null) {
-                runCatching { keystoreManager.deleteKey(alias) }
-            }
-            // Delete bitmap file for drawn/image signatures
-            if (signature.bitmapPath != null) {
-                runCatching { File(signature.bitmapPath).delete() }
-            }
+            signature.bitmapPath?.let { runCatching { File(it).delete() } }
             signatureRepository.delete(signature.id)
         }
     }
@@ -248,9 +208,7 @@ class SignerViewModel(
                 strokeJoin = Paint.Join.ROUND
                 isAntiAlias = true
             }
-            strokes.forEach { stroke ->
-                canvas.drawPath(stroke.toAndroidPath(), paint)
-            }
+            strokes.forEach { stroke -> canvas.drawPath(stroke.toAndroidPath(), paint) }
             return bitmap
         }
 
@@ -259,11 +217,9 @@ class SignerViewModel(
             if (isEmpty()) return path
             path.moveTo(first().x, first().y)
             if (size == 1) {
-                // Single tap: draw a small circle
                 path.addCircle(first().x, first().y, STROKE_WIDTH_PX / 2f, Path.Direction.CW)
                 return path
             }
-            // Quadratic Bézier through midpoints for smooth curves
             for (i in 0 until size - 1) {
                 val mid = Offset((this[i].x + this[i + 1].x) / 2f, (this[i].y + this[i + 1].y) / 2f)
                 path.quadTo(this[i].x, this[i].y, mid.x, mid.y)

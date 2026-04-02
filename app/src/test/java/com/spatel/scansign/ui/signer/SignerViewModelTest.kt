@@ -10,7 +10,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
@@ -25,14 +24,13 @@ class SignerViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     private val fakeRepo = FakeSignatureRepository()
-    private val fakeKeystore = FakeKeystoreManager()
 
     private lateinit var viewModel: SignerViewModel
 
     @Before
     fun setup() {
         // Context is only used for file I/O in save flows — not exercised in these pure-logic tests
-        viewModel = SignerViewModel(fakeKeystore, fakeRepo, mockk<Context>(relaxed = true))
+        viewModel = SignerViewModel(fakeRepo, mockk<Context>(relaxed = true))
     }
 
     // ── Tab switching ─────────────────────────────────────────────────────────
@@ -46,9 +44,6 @@ class SignerViewModelTest {
     fun `selectTab updates selected tab`() = runTest {
         viewModel.selectTab(SignerTab.IMAGE)
         assertEquals(SignerTab.IMAGE, viewModel.selectedTab.value)
-
-        viewModel.selectTab(SignerTab.DIGITAL)
-        assertEquals(SignerTab.DIGITAL, viewModel.selectedTab.value)
     }
 
     // ── Drawing ───────────────────────────────────────────────────────────────
@@ -135,28 +130,6 @@ class SignerViewModelTest {
         assertEquals(uri, viewModel.selectedImageUri.value)
     }
 
-    // ── Digital signatures ────────────────────────────────────────────────────
-
-    @Test
-    fun `createDigitalSignature generates key and saves to repository`() = runTest {
-        viewModel.createDigitalSignature("Work Signature")
-
-        // Wait for async work
-        val saved = fakeRepo.getAll().first()
-        assertEquals(1, saved.size)
-        assertEquals("Work Signature", saved[0].name)
-        assertEquals(SignatureType.DIGITAL, saved[0].type)
-        assertTrue("Keystore should have the generated alias", fakeKeystore.generatedAliases.isNotEmpty())
-    }
-
-    @Test
-    fun `createDigitalSignature with blank name is a no-op`() = runTest {
-        viewModel.createDigitalSignature("   ")
-        val saved = fakeRepo.getAll().first()
-        assertTrue(saved.isEmpty())
-        assertTrue(fakeKeystore.generatedAliases.isEmpty())
-    }
-
     // ── Delete ────────────────────────────────────────────────────────────────
 
     @Test
@@ -173,32 +146,5 @@ class SignerViewModelTest {
 
         val remaining = fakeRepo.getAll().first()
         assertTrue(remaining.isEmpty())
-    }
-
-    @Test
-    fun `deleteSignature removes key from keystore for DIGITAL type`() = runTest {
-        val alias = "test_alias"
-        fakeKeystore.generatedAliases.add(alias)
-        val sig = Signature(
-            id = "sig-2",
-            name = "Digital Sig",
-            type = SignatureType.DIGITAL,
-            certificateAlias = alias,
-            createdAt = 0L,
-        )
-        fakeRepo.save(sig)
-
-        viewModel.deleteSignature(sig)
-
-        assertFalse(fakeKeystore.generatedAliases.contains(alias))
-    }
-
-    // ── Bezier path helper (pure Compose geometry, no Android Canvas) ────────
-
-    @Test
-    fun `toComposePath is implicitly covered by draw state tests — bitmap rendering is manual`() {
-        // android.graphics.Bitmap requires Android runtime.
-        // SignerViewModel.renderStrokesToBitmap is tested via the manual draw tab test plan.
-        // This is a placeholder to document the gap.
     }
 }
