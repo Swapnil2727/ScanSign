@@ -24,6 +24,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DriveFileRenameOutline
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -35,6 +36,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -76,6 +78,7 @@ import java.util.Locale
 fun DocumentDetailScreen(
     onBack: () -> Unit,
     onDocumentDeleted: () -> Unit,
+    onSignClick: () -> Unit,
     viewModel: DocumentDetailViewModel,
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -95,6 +98,7 @@ fun DocumentDetailScreen(
         onShare = { pdfPath -> shareDocument(context, pdfPath) },
         onRename = viewModel::rename,
         onDelete = viewModel::delete,
+        onSignClick = onSignClick,
     )
 }
 
@@ -108,6 +112,7 @@ private fun DocumentDetailContent(
     onShare: (pdfPath: String) -> Unit,
     onRename: (newTitle: String) -> Unit,
     onDelete: () -> Unit,
+    onSignClick: () -> Unit,
 ) {
     val title = if (uiState is DocumentDetailUiState.Success) uiState.document.title else ""
     var showRenameSheet by remember { mutableStateOf(false) }
@@ -155,6 +160,15 @@ private fun DocumentDetailContent(
                     containerColor = MaterialTheme.colorScheme.surface,
                 ),
             )
+        },
+        floatingActionButton = {
+            if (uiState is DocumentDetailUiState.Success
+                && uiState.document.status != DocumentStatus.SIGNED
+            ) {
+                FloatingActionButton(onClick = onSignClick) {
+                    Icon(Icons.Filled.Edit, contentDescription = "Sign document")
+                }
+            }
         },
     ) { innerPadding ->
         when (uiState) {
@@ -520,6 +534,7 @@ private fun DocumentDetailContentPreview() {
             onShare = {},
             onRename = {},
             onDelete = {},
+            onSignClick = {},
         )
     }
 }
@@ -534,6 +549,7 @@ private fun DocumentDetailLoadingPreview() {
             onShare = {},
             onRename = {},
             onDelete = {},
+            onSignClick = {},
         )
     }
 }

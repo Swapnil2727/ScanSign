@@ -25,6 +25,8 @@ import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.ui.NavDisplay
 import com.spatel.scansign.ui.documents.DocumentDetailScreen
 import com.spatel.scansign.ui.documents.DocumentDetailViewModel
+import com.spatel.scansign.ui.documents.DocumentSigningScreen
+import com.spatel.scansign.ui.documents.DocumentSigningViewModel
 import com.spatel.scansign.ui.documents.DocumentsScreen
 import com.spatel.scansign.ui.documents.DocumentsViewModel
 import com.spatel.scansign.ui.scanner.GalleryImportScreen
@@ -46,6 +48,7 @@ fun AppNavigation() {
     val showBottomBar = currentRoute !is ScannerRoute
         && currentRoute !is ScanConfirmRoute
         && currentRoute !is GalleryImportRoute
+        && currentRoute !is DocumentSigningRoute
 
     Scaffold(
         bottomBar = {
@@ -121,7 +124,19 @@ fun AppNavigation() {
                     DocumentDetailScreen(
                         onBack = { backStack.removeAt(backStack.lastIndex) },
                         onDocumentDeleted = { backStack.removeAt(backStack.lastIndex) },
+                        onSignClick = { backStack.add(DocumentSigningRoute(key.documentId)) },
                         viewModel = detailViewModel,
+                    )
+                }
+                entry<DocumentSigningRoute> { key ->
+                    val signingViewModel: DocumentSigningViewModel = koinViewModel(
+                        key = key.documentId,
+                        parameters = { parametersOf(key.documentId) },
+                    )
+                    DocumentSigningScreen(
+                        onBack   = { backStack.removeAt(backStack.lastIndex) },
+                        onSigned = { backStack.removeAt(backStack.lastIndex) },
+                        viewModel = signingViewModel,
                     )
                 }
             },
