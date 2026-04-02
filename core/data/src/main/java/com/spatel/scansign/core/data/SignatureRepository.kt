@@ -37,7 +37,7 @@ private fun Signature.toEntity() = SignatureEntity(
     id = id,
     name = name,
     type = type.name,
-    bitmapPath = null,         // populated when bitmap is saved to disk (Week 9)
+    bitmapPath = bitmapPath,
     keystoreAlias = certificateAlias,
     createdAt = createdAt,
 )
@@ -46,6 +46,7 @@ private fun SignatureEntity.toDomain() = Signature(
     id = id,
     name = name,
     type = SignatureType.valueOf(type),
+    bitmapPath = bitmapPath,
     certificateAlias = keystoreAlias,
     createdAt = createdAt,
 )
