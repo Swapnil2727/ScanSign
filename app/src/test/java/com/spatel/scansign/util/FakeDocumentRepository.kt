@@ -20,6 +20,7 @@ class FakeDocumentRepository : DocumentRepository {
     var lastRenamedId: String? = null
     var lastRenamedTitle: String? = null
     var lastDeletedId: String? = null
+    var lastSignedId: String? = null
 
     fun setDocuments(docs: List<Document>) {
         _docs.value = docs
@@ -44,6 +45,13 @@ class FakeDocumentRepository : DocumentRepository {
     override suspend fun delete(id: String) {
         lastDeletedId = id
         _docs.update { it.filter { doc -> doc.id != id } }
+    }
+
+    override suspend fun markAsSigned(id: String) {
+        lastSignedId = id
+        _docs.update { docs ->
+            docs.map { if (it.id == id) it.copy(status = com.spatel.scansign.core.model.DocumentStatus.SIGNED) else it }
+        }
     }
 
     override suspend fun save(

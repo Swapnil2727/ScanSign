@@ -90,4 +90,10 @@ internal class DocumentRepositoryImpl(
         }
         dao.delete(id)
     }
+
+    override suspend fun markAsSigned(id: String) {
+        withContext(Dispatchers.IO) {
+            dao.updateStatus(id, DocumentStatus.SIGNED.name, System.currentTimeMillis())
+        }
+    }
 }

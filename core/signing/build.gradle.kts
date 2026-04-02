@@ -3,7 +3,7 @@ plugins {
 }
 
 android {
-    namespace  = "com.spatel.scansign.core.data"
+    namespace = "com.spatel.scansign.core.signing"
     compileSdk {
         version = release(36)
     }
@@ -15,9 +15,7 @@ android {
 }
 
 dependencies {
-    implementation(projects.core.model)
-    implementation(projects.core.database)
-    implementation(projects.core.pdf)
-    implementation(projects.core.signing)
     implementation(libs.kotlinx.coroutines.core)
+    testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
 }
