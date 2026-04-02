@@ -11,9 +11,12 @@ class PdfCopier(private val context: Context) {
     suspend fun copy(sourceUri: Uri, destinationFile: File): Result<File> =
         withContext(Dispatchers.IO) {
             runCatching {
-                context.contentResolver.openInputStream(sourceUri)!!.use { input ->
-                    input.copyTo(destinationFile.outputStream())
+                val inputStream = if (sourceUri.scheme == "file") {
+                    File(sourceUri.path!!).inputStream()
+                } else {
+                    context.contentResolver.openInputStream(sourceUri)!!
                 }
+                inputStream.use { it.copyTo(destinationFile.outputStream()) }
                 destinationFile
             }
         }
