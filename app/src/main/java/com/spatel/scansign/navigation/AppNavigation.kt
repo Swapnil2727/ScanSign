@@ -4,9 +4,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.Draw
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.CameraAlt
+import androidx.compose.material.icons.outlined.Draw
 import androidx.compose.material.icons.outlined.FolderOpen
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Icon
@@ -30,6 +32,7 @@ import com.spatel.scansign.ui.scanner.ScanConfirmScreen
 import com.spatel.scansign.ui.scanner.ScannerScreen
 import com.spatel.scansign.ui.scanner.ScannerViewModel
 import com.spatel.scansign.ui.settings.SettingsScreen
+import com.spatel.scansign.ui.signer.SignerScreen
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 
@@ -104,6 +107,9 @@ fun AppNavigation() {
                         viewModel = scannerViewModel,
                     )
                 }
+                entry<SignerRoute> {
+                    SignerScreen()
+                }
                 entry<SettingsRoute> {
                     SettingsScreen()
                 }
@@ -135,6 +141,7 @@ private data class BottomNavItem(
 private val bottomNavItems = listOf(
     BottomNavItem(DocumentsRoute, "Docs", Icons.Filled.FolderOpen, Icons.Outlined.FolderOpen),
     BottomNavItem(ScannerRoute, "Scan", Icons.Filled.CameraAlt, Icons.Outlined.CameraAlt),
+    BottomNavItem(SignerRoute, "Sign", Icons.Filled.Draw, Icons.Outlined.Draw),
     BottomNavItem(SettingsRoute, "Settings", Icons.Filled.Settings, Icons.Outlined.Settings),
 )
 

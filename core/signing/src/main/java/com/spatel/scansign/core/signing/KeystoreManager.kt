@@ -14,15 +14,15 @@ import javax.security.auth.x500.X500Principal
  * Keys are stored inside the hardware-backed Keystore — private key material never
  * leaves secure hardware. Each key pair is identified by a unique [alias].
  */
-class KeystoreManager {
+open class KeystoreManager {
 
-    private val keyStore: KeyStore = KeyStore.getInstance(PROVIDER).apply { load(null) }
+    private val keyStore: KeyStore by lazy { KeyStore.getInstance(PROVIDER).apply { load(null) } }
 
     /**
      * Generates a new RSA-2048 key pair and stores it under [alias].
      * If a key already exists for this alias it is replaced.
      */
-    fun generateKeyPair(alias: String): KeyPair {
+    open fun generateKeyPair(alias: String): KeyPair {
         val spec = KeyGenParameterSpec.Builder(
             alias,
             KeyProperties.PURPOSE_SIGN or KeyProperties.PURPOSE_VERIFY,
@@ -48,10 +48,10 @@ class KeystoreManager {
     }
 
     /** Returns true if a key exists for [alias]. */
-    fun hasKey(alias: String): Boolean = keyStore.containsAlias(alias)
+    open fun hasKey(alias: String): Boolean = keyStore.containsAlias(alias)
 
     /** Permanently deletes the key pair for [alias]. No-op if the alias does not exist. */
-    fun deleteKey(alias: String) {
+    open fun deleteKey(alias: String) {
         if (keyStore.containsAlias(alias)) keyStore.deleteEntry(alias)
     }
 
