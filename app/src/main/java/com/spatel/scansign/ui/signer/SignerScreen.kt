@@ -30,6 +30,7 @@ import androidx.compose.material.icons.outlined.Photo
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -83,12 +84,13 @@ import java.util.Locale
 
 @Composable
 fun SignerScreen(viewModel: SignerViewModel = koinViewModel()) {
-    val selectedTab by viewModel.selectedTab.collectAsStateWithLifecycle()
-    val completedStrokes by viewModel.completedStrokes.collectAsStateWithLifecycle()
-    val currentStroke by viewModel.currentStroke.collectAsStateWithLifecycle()
-    val selectedImageUri by viewModel.selectedImageUri.collectAsStateWithLifecycle()
-    val savedSignatures by viewModel.savedSignatures.collectAsStateWithLifecycle()
-    val saveState by viewModel.saveState.collectAsStateWithLifecycle()
+    val selectedTab          by viewModel.selectedTab.collectAsStateWithLifecycle()
+    val completedStrokes     by viewModel.completedStrokes.collectAsStateWithLifecycle()
+    val currentStroke        by viewModel.currentStroke.collectAsStateWithLifecycle()
+    val selectedImageUri     by viewModel.selectedImageUri.collectAsStateWithLifecycle()
+    val savedSignatures      by viewModel.savedSignatures.collectAsStateWithLifecycle()
+    val saveState            by viewModel.saveState.collectAsStateWithLifecycle()
+    val transparentBg        by viewModel.transparentBackground.collectAsStateWithLifecycle()
 
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -117,7 +119,9 @@ fun SignerScreen(viewModel: SignerViewModel = koinViewModel()) {
         onStrokeEnd = viewModel::endStroke,
         onUndo = viewModel::undoLastStroke,
         onClear = viewModel::clearDrawing,
-        onSaveDrawn = { name, w, h -> viewModel.saveDrawnSignature(name, w, h) },
+        transparentBackground = transparentBg,
+        onTransparentBackgroundChange = viewModel::setTransparentBackground,
+        onSaveDrawn = { name, w, h -> viewModel.saveDrawnSignature(name, w, h, transparentBg) },
         onImageSelected = viewModel::onImageSelected,
         onSaveImage = viewModel::saveImageSignature,
         onDeleteSignature = viewModel::deleteSignature,
@@ -136,6 +140,8 @@ private fun SignerContent(
     savedSignatures: List<Signature>,
     isSaving: Boolean,
     snackbarHostState: SnackbarHostState,
+    transparentBackground: Boolean,
+    onTransparentBackgroundChange: (Boolean) -> Unit,
     onTabSelected: (SignerTab) -> Unit,
     onStrokeStart: (Offset) -> Unit,
     onStrokeMove: (Offset) -> Unit,
@@ -186,6 +192,8 @@ private fun SignerContent(
                             completedStrokes = completedStrokes,
                             currentStroke = currentStroke,
                             isSaving = isSaving,
+                            transparentBackground = transparentBackground,
+                            onTransparentBackgroundChange = onTransparentBackgroundChange,
                             onStrokeStart = onStrokeStart,
                             onStrokeMove = onStrokeMove,
                             onStrokeEnd = onStrokeEnd,
@@ -235,6 +243,8 @@ private fun DrawTab(
     completedStrokes: List<List<Offset>>,
     currentStroke: List<Offset>,
     isSaving: Boolean,
+    transparentBackground: Boolean,
+    onTransparentBackgroundChange: (Boolean) -> Unit,
     onStrokeStart: (Offset) -> Unit,
     onStrokeMove: (Offset) -> Unit,
     onStrokeEnd: () -> Unit,
@@ -281,7 +291,23 @@ private fun DrawTab(
             }
         }
 
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(8.dp))
+
+        // Background option — affects how the signature is embedded on dark pages
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FilterChip(
+                selected = !transparentBackground,
+                onClick  = { onTransparentBackgroundChange(false) },
+                label    = { Text("White background") },
+            )
+            FilterChip(
+                selected = transparentBackground,
+                onClick  = { onTransparentBackgroundChange(true) },
+                label    = { Text("No background") },
+            )
+        }
+
+        Spacer(Modifier.height(8.dp))
 
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -545,6 +571,8 @@ private fun DrawTabPreview() {
             completedStrokes = emptyList(),
             currentStroke = emptyList(),
             isSaving = false,
+            transparentBackground = false,
+            onTransparentBackgroundChange = {},
             onStrokeStart = {},
             onStrokeMove = {},
             onStrokeEnd = {},
