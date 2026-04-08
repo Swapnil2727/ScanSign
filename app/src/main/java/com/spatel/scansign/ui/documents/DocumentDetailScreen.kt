@@ -79,6 +79,7 @@ fun DocumentDetailScreen(
     onBack: () -> Unit,
     onDocumentDeleted: () -> Unit,
     onSignClick: () -> Unit,
+    onPageClick: (pageIndex: Int) -> Unit,
     viewModel: DocumentDetailViewModel,
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -99,6 +100,7 @@ fun DocumentDetailScreen(
         onRename = viewModel::rename,
         onDelete = viewModel::delete,
         onSignClick = onSignClick,
+        onPageClick = onPageClick,
     )
 }
 
@@ -113,6 +115,7 @@ private fun DocumentDetailContent(
     onRename: (newTitle: String) -> Unit,
     onDelete: () -> Unit,
     onSignClick: () -> Unit,
+    onPageClick: (pageIndex: Int) -> Unit,
 ) {
     val title = if (uiState is DocumentDetailUiState.Success) uiState.document.title else ""
     var showRenameSheet by remember { mutableStateOf(false) }
@@ -177,6 +180,7 @@ private fun DocumentDetailContent(
             is DocumentDetailUiState.Success -> DocumentBody(
                 document = uiState.document,
                 pages = uiState.pages,
+                onPageClick = onPageClick,
                 modifier = Modifier.padding(innerPadding),
             )
         }
@@ -210,6 +214,7 @@ private fun DocumentDetailContent(
 private fun DocumentBody(
     document: Document,
     pages: List<DocumentPage>,
+    onPageClick: (pageIndex: Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(
@@ -231,7 +236,7 @@ private fun DocumentBody(
             item { PagesFallback(document) }
         } else {
             itemsIndexed(pages, key = { _, page -> page.id }) { _, page ->
-                PageItem(page)
+                PageItem(page, onClick = { onPageClick(page.pageNumber) })
             }
         }
     }
@@ -306,8 +311,9 @@ private fun MetadataRow(label: String, value: String) {
 }
 
 @Composable
-private fun PageItem(page: DocumentPage) {
+private fun PageItem(page: DocumentPage, onClick: () -> Unit) {
     Surface(
+        onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 6.dp),
@@ -535,6 +541,7 @@ private fun DocumentDetailContentPreview() {
             onRename = {},
             onDelete = {},
             onSignClick = {},
+            onPageClick = {},
         )
     }
 }
@@ -550,6 +557,7 @@ private fun DocumentDetailLoadingPreview() {
             onRename = {},
             onDelete = {},
             onSignClick = {},
+            onPageClick = {},
         )
     }
 }
