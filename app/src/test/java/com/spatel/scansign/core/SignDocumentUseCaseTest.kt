@@ -4,11 +4,9 @@ import android.graphics.Bitmap
 import com.spatel.scansign.core.data.SignDocumentUseCase
 import com.spatel.scansign.core.model.Document
 import com.spatel.scansign.core.model.DocumentStatus
-import com.spatel.scansign.core.pdf.PdfPageRenderer
 import com.spatel.scansign.util.FakeDocumentRepository
 import com.spatel.scansign.util.FakePdfSigner
 import com.spatel.scansign.util.MainDispatcherRule
-import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -17,6 +15,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import io.mockk.mockk
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class SignDocumentUseCaseTest {
@@ -26,8 +25,6 @@ class SignDocumentUseCaseTest {
 
     private val fakeRepo = FakeDocumentRepository()
     private val stubBitmap: Bitmap = mockk(relaxed = true)
-    // FakeDocumentRepository.getPages() returns emptyList(), so renderPage is never called.
-    private val fakeRenderer: PdfPageRenderer = mockk(relaxed = true)
 
     private val docWithPdf = Document(
         id = "doc-1",
@@ -49,7 +46,7 @@ class SignDocumentUseCaseTest {
     @Test
     fun `success - embeds bitmap and marks document as SIGNED`() = runTest {
         val fakeSigner = FakePdfSigner(shouldFail = false)
-        val useCase = SignDocumentUseCase(fakeRepo, fakeSigner, fakeRenderer)
+        val useCase = SignDocumentUseCase(fakeRepo, fakeSigner)
 
         val result = useCase("doc-1", stubBitmap, 0, 100f, 50f, 200f, 80f)
 
@@ -61,7 +58,7 @@ class SignDocumentUseCaseTest {
     @Test
     fun `document not found - returns failure, embedBitmap never called`() = runTest {
         val fakeSigner = FakePdfSigner(shouldFail = false)
-        val useCase = SignDocumentUseCase(fakeRepo, fakeSigner, fakeRenderer)
+        val useCase = SignDocumentUseCase(fakeRepo, fakeSigner)
 
         val result = useCase("non-existent-id", stubBitmap, 0, 0f, 0f, 100f, 40f)
 
@@ -73,7 +70,7 @@ class SignDocumentUseCaseTest {
     @Test
     fun `embed failure - returns failure, markAsSigned never called`() = runTest {
         val fakeSigner = FakePdfSigner(shouldFail = true)
-        val useCase = SignDocumentUseCase(fakeRepo, fakeSigner, fakeRenderer)
+        val useCase = SignDocumentUseCase(fakeRepo, fakeSigner)
 
         val result = useCase("doc-1", stubBitmap, 0, 0f, 0f, 100f, 40f)
 
@@ -84,7 +81,7 @@ class SignDocumentUseCaseTest {
 
     @Test
     fun `success - signed document status is reflected in repository`() = runTest {
-        val useCase = SignDocumentUseCase(fakeRepo, FakePdfSigner(), fakeRenderer)
+        val useCase = SignDocumentUseCase(fakeRepo, FakePdfSigner())
 
         useCase("doc-1", stubBitmap, 0, 0f, 0f, 100f, 40f)
 

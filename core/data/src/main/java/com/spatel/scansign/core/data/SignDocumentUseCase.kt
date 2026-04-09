@@ -1,7 +1,6 @@
 package com.spatel.scansign.core.data
 
 import android.graphics.Bitmap
-import com.spatel.scansign.core.pdf.PdfPageRenderer
 import com.spatel.scansign.core.pdf.PdfSigner
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.firstOrNull
@@ -32,7 +31,6 @@ fun interface SignDocumentUseCase {
         operator fun invoke(
             documentRepository: DocumentRepository,
             pdfSigner: PdfSigner,
-            pdfPageRenderer: PdfPageRenderer,
         ): SignDocumentUseCase = SignDocumentUseCase { documentId, bitmap, pageIndex, x, y, w, h ->
             withContext(Dispatchers.IO) {
                 runCatching {
@@ -52,20 +50,6 @@ fun interface SignDocumentUseCase {
                         width = w,
                         height = h,
                     ).getOrThrow()
-
-                    // Re-render the signed page and overwrite its image file so that
-                    // DocumentDetailScreen and DocumentViewerScreen show the embedded signature.
-                    // Coil uses File.lastModified() as a cache key, so it picks up the new bytes.
-                    val signedPage = documentRepository.getPages(documentId).getOrNull(pageIndex)
-                    if (signedPage != null && signedPage.imagePath.isNotEmpty()) {
-                        pdfPageRenderer.renderPage(pdfFile, pageIndex, widthPx = 1080)
-                            .getOrNull()
-                            ?.let { updated ->
-                                File(signedPage.imagePath).outputStream().use { out ->
-                                    updated.compress(Bitmap.CompressFormat.JPEG, 95, out)
-                                }
-                            }
-                    }
 
                     documentRepository.markAsSigned(documentId)
                 }

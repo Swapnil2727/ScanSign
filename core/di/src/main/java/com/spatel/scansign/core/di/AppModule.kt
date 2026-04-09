@@ -23,5 +23,5 @@ val appModule = module {
     single<SignatureRepository> { SignatureRepository(get()) }
     single<SaveScannedDocumentUseCase> { SaveScannedDocumentUseCase(get<DocumentRepository>()) }
     single<DeleteDocumentUseCase> { DeleteDocumentUseCase(get<DocumentRepository>()) }
-    single<SignDocumentUseCase> { SignDocumentUseCase(get<DocumentRepository>(), get<PdfSigner>(), get<PdfPageRenderer>()) }
+    single<SignDocumentUseCase> { SignDocumentUseCase(get<DocumentRepository>(), get<PdfSigner>()) }
 }
