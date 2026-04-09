@@ -1,6 +1,7 @@
 package com.spatel.scansign.ui.documents
 
 import android.graphics.Bitmap
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -17,6 +18,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -97,6 +99,7 @@ fun DocumentSigningScreen(
         onBack           = onBack,
         onSelectSig      = viewModel::selectSignature,
         onDrag           = viewModel::dragSignature,
+        onResize         = viewModel::resizeSignature,
         onNextPage       = viewModel::nextPage,
         onPrevPage       = viewModel::prevPage,
         onConfirm        = viewModel::confirm,
@@ -117,6 +120,7 @@ private fun DocumentSigningContent(
     onBack: () -> Unit,
     onSelectSig: (Signature) -> Unit,
     onDrag: (Offset) -> Unit,
+    onResize: (Offset) -> Unit,
     onNextPage: () -> Unit,
     onPrevPage: () -> Unit,
     onConfirm: () -> Unit,
@@ -163,6 +167,7 @@ private fun DocumentSigningContent(
                             size      = signatureSize,
                             scale     = scale,
                             onDrag    = onDrag,
+                            onResize  = onResize,
                         )
                     }
                 } else {
@@ -217,6 +222,7 @@ private fun SignatureDragOverlay(
     size: Size,
     scale: Float,           // displayPx per bitmapPx
     onDrag: (Offset) -> Unit,
+    onResize: (Offset) -> Unit,
 ) {
     val density = LocalDensity.current
     val offsetDp = with(density) {
@@ -251,6 +257,19 @@ private fun SignatureDragOverlay(
                     .alpha(0.85f),
             )
         }
+
+        // ── Resize handle (bottom-right corner) ───────────────────────────
+        Box(
+            modifier = Modifier
+                .size(20.dp)
+                .align(Alignment.BottomEnd)
+                .background(MaterialTheme.colorScheme.primary, CircleShape)
+                .pointerInput(Unit) {
+                    detectDragGestures { _, dragAmount ->
+                        onResize(Offset(dragAmount.x / scale, dragAmount.y / scale))
+                    }
+                },
+        )
     }
 }
 
