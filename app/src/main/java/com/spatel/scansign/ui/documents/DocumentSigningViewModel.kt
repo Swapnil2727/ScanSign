@@ -151,6 +151,19 @@ class DocumentSigningViewModel(
         )
     }
 
+    // ── Resize ────────────────────────────────────────────────────────────────
+
+    fun resizeSignature(delta: Offset) {
+        val bmp = _pageBitmap.value ?: return
+        val cur = _signatureSize.value
+        val off = _signatureOffset.value
+        val minPx = bmp.width * 0.05f          // 5 % of page width minimum
+        _signatureSize.value = Size(
+            width  = (cur.width  + delta.x).coerceIn(minPx, (bmp.width  - off.x).coerceAtLeast(minPx)),
+            height = (cur.height + delta.y).coerceIn(minPx, (bmp.height - off.y).coerceAtLeast(minPx)),
+        )
+    }
+
     // ── Confirm / sign ────────────────────────────────────────────────────────
 
     fun confirm() {
