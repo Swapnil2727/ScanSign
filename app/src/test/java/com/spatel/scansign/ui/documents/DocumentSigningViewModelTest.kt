@@ -260,6 +260,44 @@ class DocumentSigningViewModelTest {
         }
     }
 
+    // ── resizeSignature ───────────────────────────────────────────────────────
+
+    @Test
+    fun `resizeSignature increases size by delta within page bounds`() = runTest {
+        val vm = createViewModel()
+        activateFlows(vm)
+        advanceUntilIdle()
+
+        val sig = Signature("s1", "My Sig", 0L, SignatureType.DRAWN)
+        vm.selectSignature(sig)
+        // Initial size: width=270, height=90 (25% of 1080, 3:1 aspect)
+        val initialSize = vm.signatureSize.value
+
+        vm.resizeSignature(Offset(50f, 30f))
+
+        val updated = vm.signatureSize.value
+        assertEquals(initialSize.width  + 50f, updated.width,  0.01f)
+        assertEquals(initialSize.height + 30f, updated.height, 0.01f)
+    }
+
+    @Test
+    fun `resizeSignature clamps at minimum size of 5 percent page width`() = runTest {
+        val vm = createViewModel()
+        activateFlows(vm)
+        advanceUntilIdle()
+
+        val sig = Signature("s1", "My Sig", 0L, SignatureType.DRAWN)
+        vm.selectSignature(sig)
+
+        // Shrink far below minimum (5% of 1080 = 54px)
+        vm.resizeSignature(Offset(-10_000f, -10_000f))
+
+        val size = vm.signatureSize.value
+        val minPx = 1080f * 0.05f   // 54px
+        assertEquals(minPx, size.width,  0.01f)
+        assertEquals(minPx, size.height, 0.01f)
+    }
+
     // ── clearSigningState ─────────────────────────────────────────────────────
 
     @Test

@@ -165,9 +165,7 @@ private fun DocumentDetailContent(
             )
         },
         floatingActionButton = {
-            if (uiState is DocumentDetailUiState.Success
-                && uiState.document.status != DocumentStatus.SIGNED
-            ) {
+            if (uiState is DocumentDetailUiState.Success) {
                 FloatingActionButton(onClick = onSignClick) {
                     Icon(Icons.Filled.Edit, contentDescription = "Sign document")
                 }
