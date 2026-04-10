@@ -27,6 +27,8 @@ import com.spatel.scansign.ui.documents.DocumentDetailScreen
 import com.spatel.scansign.ui.documents.DocumentDetailViewModel
 import com.spatel.scansign.ui.documents.DocumentSigningScreen
 import com.spatel.scansign.ui.documents.DocumentSigningViewModel
+import com.spatel.scansign.ui.documents.DocumentViewerScreen
+import com.spatel.scansign.ui.documents.DocumentViewerViewModel
 import com.spatel.scansign.ui.documents.DocumentsScreen
 import com.spatel.scansign.ui.documents.DocumentsViewModel
 import com.spatel.scansign.ui.scanner.GalleryImportScreen
@@ -49,6 +51,7 @@ fun AppNavigation() {
         && currentRoute !is ScanConfirmRoute
         && currentRoute !is GalleryImportRoute
         && currentRoute !is DocumentSigningRoute
+        && currentRoute !is DocumentViewerRoute
 
     Scaffold(
         bottomBar = {
@@ -125,7 +128,20 @@ fun AppNavigation() {
                         onBack = { backStack.removeAt(backStack.lastIndex) },
                         onDocumentDeleted = { backStack.removeAt(backStack.lastIndex) },
                         onSignClick = { backStack.add(DocumentSigningRoute(key.documentId)) },
+                        onPageClick = { page -> backStack.add(DocumentViewerRoute(key.documentId, page)) },
                         viewModel = detailViewModel,
+                    )
+                }
+                entry<DocumentViewerRoute> { key ->
+                    val viewerViewModel: DocumentViewerViewModel = koinViewModel(
+                        key = key.documentId,
+                        parameters = { parametersOf(key.documentId) },
+                    )
+                    DocumentViewerScreen(
+                        initialPage = key.initialPage,
+                        onBack      = { backStack.removeAt(backStack.lastIndex) },
+                        onSignClick = { backStack.add(DocumentSigningRoute(key.documentId)) },
+                        viewModel   = viewerViewModel,
                     )
                 }
                 entry<DocumentSigningRoute> { key ->

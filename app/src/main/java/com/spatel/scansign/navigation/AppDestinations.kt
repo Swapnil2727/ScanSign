@@ -13,3 +13,4 @@ import kotlinx.serialization.Serializable
 @Serializable data object GalleryImportRoute
 @Serializable data class DocumentDetailRoute(val documentId: String)
 @Serializable data class DocumentSigningRoute(val documentId: String)
+@Serializable data class DocumentViewerRoute(val documentId: String, val initialPage: Int = 0)
