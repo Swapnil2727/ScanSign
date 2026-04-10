@@ -43,6 +43,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.spatel.scansign.core.model.DocumentPage
+import com.spatel.scansign.core.ui.preview.ThemePreviews
+import com.spatel.scansign.core.ui.theme.ScanSignTheme
 import kotlinx.coroutines.launch
 import java.io.File
 
@@ -223,6 +225,42 @@ private fun PageThumbnail(
                     shape = RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp),
                 )
                 .padding(horizontal = 4.dp, vertical = 1.dp),
+        )
+    }
+}
+
+// ── Previews ──────────────────────────────────────────────────────────────────
+
+private val previewPages = listOf(
+    DocumentPage("p1", "doc-1", 0, ""),
+    DocumentPage("p2", "doc-1", 1, ""),
+    DocumentPage("p3", "doc-1", 2, ""),
+)
+
+@ThemePreviews
+@Composable
+private fun DocumentViewerContentPreview() {
+    ScanSignTheme {
+        DocumentViewerContent(
+            title       = "Invoice March 2025",
+            pages       = previewPages,
+            initialPage = 0,
+            onBack      = {},
+            onSignClick = {},
+        )
+    }
+}
+
+@ThemePreviews
+@Composable
+private fun DocumentViewerSinglePagePreview() {
+    ScanSignTheme {
+        DocumentViewerContent(
+            title       = "Single Page Doc",
+            pages       = listOf(DocumentPage("p1", "doc-1", 0, "")),
+            initialPage = 0,
+            onBack      = {},
+            onSignClick = {},
         )
     }
 }

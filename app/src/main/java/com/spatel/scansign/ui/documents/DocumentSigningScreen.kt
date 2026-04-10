@@ -56,6 +56,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.Image
 import coil.compose.AsyncImage
 import com.spatel.scansign.core.model.Signature
+import com.spatel.scansign.core.model.SignatureType
+import com.spatel.scansign.core.ui.preview.ThemePreviews
+import com.spatel.scansign.core.ui.theme.ScanSignTheme
 import java.io.File
 
 @Composable
@@ -348,5 +351,84 @@ private fun PageNavigationRow(
         IconButton(onClick = onNextPage) {
             Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "Next page")
         }
+    }
+}
+
+// ── Previews ──────────────────────────────────────────────────────────────────
+
+private val previewSignatures = listOf(
+    Signature("s1", "My Signature", 0L, SignatureType.DRAWN, bitmapPath = null),
+    Signature("s2", "Initials", 0L, SignatureType.IMAGE, bitmapPath = null),
+)
+
+@ThemePreviews
+@Composable
+private fun DocumentSigningNoSignaturesPreview() {
+    ScanSignTheme {
+        DocumentSigningContent(
+            pageBitmap        = null,
+            pageIndex         = 0,
+            signatures        = emptyList(),
+            selectedSig       = null,
+            signatureOffset   = Offset.Zero,
+            signatureSize     = Size.Zero,
+            signingState      = SigningState.Idle,
+            snackbarHostState = SnackbarHostState(),
+            onBack            = {},
+            onSelectSig       = {},
+            onDrag            = {},
+            onResize          = {},
+            onNextPage        = {},
+            onPrevPage        = {},
+            onConfirm         = {},
+        )
+    }
+}
+
+@ThemePreviews
+@Composable
+private fun DocumentSigningWithSignaturesPreview() {
+    ScanSignTheme {
+        DocumentSigningContent(
+            pageBitmap        = null,
+            pageIndex         = 0,
+            signatures        = previewSignatures,
+            selectedSig       = previewSignatures.first(),
+            signatureOffset   = Offset(100f, 200f),
+            signatureSize     = Size(270f, 90f),
+            signingState      = SigningState.Idle,
+            snackbarHostState = SnackbarHostState(),
+            onBack            = {},
+            onSelectSig       = {},
+            onDrag            = {},
+            onResize          = {},
+            onNextPage        = {},
+            onPrevPage        = {},
+            onConfirm         = {},
+        )
+    }
+}
+
+@ThemePreviews
+@Composable
+private fun DocumentSigningInProgressPreview() {
+    ScanSignTheme {
+        DocumentSigningContent(
+            pageBitmap        = null,
+            pageIndex         = 1,
+            signatures        = previewSignatures,
+            selectedSig       = previewSignatures.first(),
+            signatureOffset   = Offset(100f, 200f),
+            signatureSize     = Size(270f, 90f),
+            signingState      = SigningState.Signing,
+            snackbarHostState = SnackbarHostState(),
+            onBack            = {},
+            onSelectSig       = {},
+            onDrag            = {},
+            onResize          = {},
+            onNextPage        = {},
+            onPrevPage        = {},
+            onConfirm         = {},
+        )
     }
 }
