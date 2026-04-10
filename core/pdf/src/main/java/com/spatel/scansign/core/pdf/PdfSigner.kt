@@ -3,11 +3,9 @@ package com.spatel.scansign.core.pdf
 import android.graphics.Bitmap
 import com.tom_roush.pdfbox.pdmodel.PDDocument
 import com.tom_roush.pdfbox.pdmodel.PDPageContentStream
-import com.tom_roush.pdfbox.pdmodel.graphics.image.JPEGFactory
+import com.tom_roush.pdfbox.pdmodel.graphics.image.LosslessFactory
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.io.ByteArrayInputStream
-import java.io.ByteArrayOutputStream
 import java.io.File
 
 /**
@@ -17,6 +15,9 @@ import java.io.File
  * measured from the **bottom-left** of the page. [width] and [height]
  * are also in points. The caller is responsible for mapping screen/UI
  * coordinates to PDF space before calling this.
+ *
+ * Uses [LosslessFactory] (PNG-based embedding) so that ARGB_8888 bitmaps
+ * with a transparent background are embedded correctly — no white box.
  */
 open class PdfSigner {
 
@@ -44,20 +45,15 @@ open class PdfSigner {
             require(pageIndex >= 0) { "pageIndex must be >= 0" }
             require(width > 0 && height > 0) { "width and height must be positive" }
 
-            val jpegBytes = ByteArrayOutputStream().also { out ->
-                signatureBitmap.compress(Bitmap.CompressFormat.JPEG, JPEG_QUALITY, out)
-            }.toByteArray()
-
             val document = PDDocument.load(sourcePdf)
             try {
                 require(pageIndex < document.numberOfPages) {
                     "pageIndex $pageIndex out of range (${document.numberOfPages} pages)"
                 }
                 val page = document.getPage(pageIndex)
-                val pdImage = JPEGFactory.createFromStream(
-                    document,
-                    ByteArrayInputStream(jpegBytes),
-                )
+                // LosslessFactory preserves alpha channel — transparent-background signatures
+                // won't produce a white box on dark pages.
+                val pdImage = LosslessFactory.createFromImage(document, signatureBitmap)
                 PDPageContentStream(
                     document,
                     page,
@@ -72,9 +68,5 @@ open class PdfSigner {
             }
             destPdf
         }
-    }
-
-    companion object {
-        private const val JPEG_QUALITY = 90
     }
 }

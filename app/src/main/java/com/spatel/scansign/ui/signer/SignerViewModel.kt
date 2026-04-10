@@ -86,6 +86,15 @@ class SignerViewModel(
         _currentStroke.value = emptyList()
     }
 
+    // ── Background option (Draw tab) ──────────────────────────────────────────
+
+    private val _transparentBackground = MutableStateFlow(false)
+    val transparentBackground: StateFlow<Boolean> = _transparentBackground.asStateFlow()
+
+    fun setTransparentBackground(value: Boolean) {
+        _transparentBackground.value = value
+    }
+
     // ── Image tab ─────────────────────────────────────────────────────────────
 
     private val _selectedImageUri = MutableStateFlow<Uri?>(null)
@@ -106,7 +115,7 @@ class SignerViewModel(
 
     // ── Save drawn signature ──────────────────────────────────────────────────
 
-    fun saveDrawnSignature(name: String, canvasWidthPx: Int, canvasHeightPx: Int) {
+    fun saveDrawnSignature(name: String, canvasWidthPx: Int, canvasHeightPx: Int, transparentBackground: Boolean = false) {
         if (name.isBlank() || _completedStrokes.value.isEmpty()) return
         viewModelScope.launch {
             _saveState.value = SignerSaveState.Saving
@@ -115,6 +124,7 @@ class SignerViewModel(
                     strokes = _completedStrokes.value,
                     widthPx = canvasWidthPx,
                     heightPx = canvasHeightPx,
+                    transparentBackground = transparentBackground,
                 )
                 val file = saveBitmapToFile(bitmap)
                 val signature = Signature(
@@ -191,15 +201,22 @@ class SignerViewModel(
     companion object {
         private const val STROKE_WIDTH_PX = 6f
 
-        /** Renders completed strokes to an [android.graphics.Bitmap]. */
+        /**
+         * Renders completed strokes to an [android.graphics.Bitmap].
+         *
+         * @param transparentBackground when `true`, the canvas background is left
+         *   transparent (ARGB_8888 default). When `false` (default), fills with white.
+         *   Use `true` to avoid a white box on dark document pages.
+         */
         fun renderStrokesToBitmap(
             strokes: List<List<Offset>>,
             widthPx: Int,
             heightPx: Int,
+            transparentBackground: Boolean = false,
         ): Bitmap {
             val bitmap = Bitmap.createBitmap(widthPx, heightPx, Bitmap.Config.ARGB_8888)
             val canvas = Canvas(bitmap)
-            canvas.drawColor(Color.WHITE)
+            if (!transparentBackground) canvas.drawColor(Color.WHITE)
             val paint = Paint().apply {
                 color = Color.BLACK
                 strokeWidth = STROKE_WIDTH_PX
