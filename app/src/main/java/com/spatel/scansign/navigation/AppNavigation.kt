@@ -150,9 +150,13 @@ fun AppNavigation() {
                         parameters = { parametersOf(key.documentId) },
                     )
                     DocumentSigningScreen(
-                        onBack   = { backStack.removeAt(backStack.lastIndex) },
-                        onSigned = { backStack.removeAt(backStack.lastIndex) },
-                        viewModel = signingViewModel,
+                        onBack              = { backStack.removeAt(backStack.lastIndex) },
+                        onSigned            = { backStack.removeAt(backStack.lastIndex) },
+                        onNavigateToSigner  = {
+                            backStack.clear()
+                            backStack.add(SignerRoute)
+                        },
+                        viewModel           = signingViewModel,
                     )
                 }
             },
