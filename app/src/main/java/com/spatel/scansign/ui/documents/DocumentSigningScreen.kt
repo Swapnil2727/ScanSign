@@ -23,7 +23,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.outlined.Draw
 import androidx.compose.material3.Button
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -65,11 +68,13 @@ import java.io.File
 fun DocumentSigningScreen(
     onBack: () -> Unit,
     onSigned: () -> Unit,
+    onNavigateToSigner: () -> Unit,
     viewModel: DocumentSigningViewModel,
 ) {
     val signatures       by viewModel.signatures.collectAsStateWithLifecycle()
     val selectedSig      by viewModel.selectedSignature.collectAsStateWithLifecycle()
     val pageIndex        by viewModel.pageIndex.collectAsStateWithLifecycle()
+    val pageCount        by viewModel.pageCount.collectAsStateWithLifecycle()
     val pageBitmap       by viewModel.pageBitmap.collectAsStateWithLifecycle()
     val signatureOffset  by viewModel.signatureOffset.collectAsStateWithLifecycle()
     val signatureSize    by viewModel.signatureSize.collectAsStateWithLifecycle()
@@ -89,20 +94,22 @@ fun DocumentSigningScreen(
     }
 
     DocumentSigningContent(
-        pageBitmap       = pageBitmap,
-        pageIndex        = pageIndex,
-        signatures       = signatures,
-        selectedSig      = selectedSig,
-        signatureOffset  = signatureOffset,
-        signatureSize    = signatureSize,
-        signingState     = signingState,
-        snackbarHostState = snackbarHostState,
-        onBack           = onBack,
-        onSelectSig      = viewModel::selectSignature,
-        onDrag           = viewModel::dragSignature,
-        onNextPage       = viewModel::nextPage,
-        onPrevPage       = viewModel::prevPage,
-        onConfirm        = viewModel::confirm,
+        pageBitmap          = pageBitmap,
+        pageIndex           = pageIndex,
+        pageCount           = pageCount,
+        signatures          = signatures,
+        selectedSig         = selectedSig,
+        signatureOffset     = signatureOffset,
+        signatureSize       = signatureSize,
+        signingState        = signingState,
+        snackbarHostState   = snackbarHostState,
+        onBack              = onBack,
+        onSelectSig         = viewModel::selectSignature,
+        onDrag              = viewModel::dragSignature,
+        onNextPage          = viewModel::nextPage,
+        onPrevPage          = viewModel::prevPage,
+        onConfirm           = viewModel::confirm,
+        onNavigateToSigner  = onNavigateToSigner,
     )
 }
 
@@ -111,6 +118,7 @@ fun DocumentSigningScreen(
 private fun DocumentSigningContent(
     pageBitmap: Bitmap?,
     pageIndex: Int,
+    pageCount: Int,
     signatures: List<Signature>,
     selectedSig: Signature?,
     signatureOffset: Offset,
@@ -123,6 +131,7 @@ private fun DocumentSigningContent(
     onNextPage: () -> Unit,
     onPrevPage: () -> Unit,
     onConfirm: () -> Unit,
+    onNavigateToSigner: () -> Unit,
 ) {
     Scaffold(
         topBar = {
@@ -178,15 +187,17 @@ private fun DocumentSigningContent(
             // ── 2. Page navigation ─────────────────────────────────────────
             PageNavigationRow(
                 pageIndex  = pageIndex,
+                pageCount  = pageCount,
                 onPrevPage = onPrevPage,
                 onNextPage = onNextPage,
             )
 
             // ── 3. Signature picker ────────────────────────────────────────
             SignaturePickerRow(
-                signatures  = signatures,
-                selectedSig = selectedSig,
-                onSelect    = onSelectSig,
+                signatures         = signatures,
+                selectedSig        = selectedSig,
+                onSelect           = onSelectSig,
+                onNavigateToSigner = onNavigateToSigner,
             )
 
             // ── 4. Apply button ────────────────────────────────────────────
@@ -264,6 +275,7 @@ private fun SignaturePickerRow(
     signatures: List<Signature>,
     selectedSig: Signature?,
     onSelect: (Signature) -> Unit,
+    onNavigateToSigner: () -> Unit,
 ) {
     Text(
         text     = "Choose signature",
@@ -271,12 +283,46 @@ private fun SignaturePickerRow(
         modifier = Modifier.padding(start = 16.dp, top = 8.dp, bottom = 4.dp),
     )
     if (signatures.isEmpty()) {
-        Text(
-            text     = "No signatures saved. Go to the Sign tab to create one.",
-            style    = MaterialTheme.typography.bodySmall,
-            color    = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(start = 16.dp, bottom = 8.dp),
-        )
+        Surface(
+            shape  = MaterialTheme.shapes.medium,
+            color  = MaterialTheme.colorScheme.surfaceVariant,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 4.dp),
+        ) {
+            Row(
+                modifier              = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment     = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Icon(
+                    imageVector        = Icons.Outlined.Draw,
+                    contentDescription = null,
+                    tint               = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier           = Modifier.size(28.dp),
+                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text  = "No signatures yet",
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    Text(
+                        text  = "Create one in the Sign tab",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                FilledTonalButton(onClick = onNavigateToSigner) {
+                    Text("Sign tab")
+                    Spacer(Modifier.width(4.dp))
+                    Icon(
+                        imageVector        = Icons.AutoMirrored.Filled.ArrowForward,
+                        contentDescription = null,
+                        modifier           = Modifier.size(16.dp),
+                    )
+                }
+            }
+        }
     } else {
         LazyRow(
             contentPadding        = PaddingValues(horizontal = 16.dp),
@@ -330,6 +376,7 @@ private fun SignatureThumbnail(
 @Composable
 private fun PageNavigationRow(
     pageIndex: Int,
+    pageCount: Int,
     onPrevPage: () -> Unit,
     onNextPage: () -> Unit,
 ) {
@@ -340,15 +387,21 @@ private fun PageNavigationRow(
         horizontalArrangement = Arrangement.Center,
         verticalAlignment     = Alignment.CenterVertically,
     ) {
-        IconButton(onClick = onPrevPage) {
+        IconButton(
+            onClick  = onPrevPage,
+            enabled  = pageIndex > 0,
+        ) {
             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Previous page")
         }
         Text(
-            text     = "Page ${pageIndex + 1}",
+            text     = "Page ${pageIndex + 1} / $pageCount",
             style    = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.padding(horizontal = 8.dp),
         )
-        IconButton(onClick = onNextPage) {
+        IconButton(
+            onClick  = onNextPage,
+            enabled  = pageIndex < pageCount - 1,
+        ) {
             Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "Next page")
         }
     }
@@ -366,21 +419,22 @@ private val previewSignatures = listOf(
 private fun DocumentSigningNoSignaturesPreview() {
     ScanSignTheme {
         DocumentSigningContent(
-            pageBitmap        = null,
-            pageIndex         = 0,
-            signatures        = emptyList(),
-            selectedSig       = null,
-            signatureOffset   = Offset.Zero,
-            signatureSize     = Size.Zero,
-            signingState      = SigningState.Idle,
-            snackbarHostState = SnackbarHostState(),
-            onBack            = {},
-            onSelectSig       = {},
-            onDrag            = {},
-            onResize          = {},
-            onNextPage        = {},
-            onPrevPage        = {},
-            onConfirm         = {},
+            pageBitmap         = null,
+            pageIndex          = 0,
+            pageCount          = 3,
+            signatures         = emptyList(),
+            selectedSig        = null,
+            signatureOffset    = Offset.Zero,
+            signatureSize      = Size.Zero,
+            signingState       = SigningState.Idle,
+            snackbarHostState  = SnackbarHostState(),
+            onBack             = {},
+            onSelectSig        = {},
+            onDrag             = {},
+            onNextPage         = {},
+            onPrevPage         = {},
+            onConfirm          = {},
+            onNavigateToSigner = {},
         )
     }
 }
@@ -390,21 +444,22 @@ private fun DocumentSigningNoSignaturesPreview() {
 private fun DocumentSigningWithSignaturesPreview() {
     ScanSignTheme {
         DocumentSigningContent(
-            pageBitmap        = null,
-            pageIndex         = 0,
-            signatures        = previewSignatures,
-            selectedSig       = previewSignatures.first(),
-            signatureOffset   = Offset(100f, 200f),
-            signatureSize     = Size(270f, 90f),
-            signingState      = SigningState.Idle,
-            snackbarHostState = SnackbarHostState(),
-            onBack            = {},
-            onSelectSig       = {},
-            onDrag            = {},
-            onResize          = {},
-            onNextPage        = {},
-            onPrevPage        = {},
-            onConfirm         = {},
+            pageBitmap         = null,
+            pageIndex          = 0,
+            pageCount          = 3,
+            signatures         = previewSignatures,
+            selectedSig        = previewSignatures.first(),
+            signatureOffset    = Offset(100f, 200f),
+            signatureSize      = Size(270f, 90f),
+            signingState       = SigningState.Idle,
+            snackbarHostState  = SnackbarHostState(),
+            onBack             = {},
+            onSelectSig        = {},
+            onDrag             = {},
+            onNextPage         = {},
+            onPrevPage         = {},
+            onConfirm          = {},
+            onNavigateToSigner = {},
         )
     }
 }
@@ -414,21 +469,22 @@ private fun DocumentSigningWithSignaturesPreview() {
 private fun DocumentSigningInProgressPreview() {
     ScanSignTheme {
         DocumentSigningContent(
-            pageBitmap        = null,
-            pageIndex         = 1,
-            signatures        = previewSignatures,
-            selectedSig       = previewSignatures.first(),
-            signatureOffset   = Offset(100f, 200f),
+            pageBitmap         = null,
+            pageIndex          = 1,
+            pageCount          = 3,
+            signatures         = previewSignatures,
+            selectedSig        = previewSignatures.first(),
+            signatureOffset    = Offset(100f, 200f),
             signatureSize     = Size(270f, 90f),
             signingState      = SigningState.Signing,
             snackbarHostState = SnackbarHostState(),
             onBack            = {},
             onSelectSig       = {},
-            onDrag            = {},
-            onResize          = {},
-            onNextPage        = {},
-            onPrevPage        = {},
-            onConfirm         = {},
+            onDrag             = {},
+            onNextPage         = {},
+            onPrevPage         = {},
+            onConfirm          = {},
+            onNavigateToSigner = {},
         )
     }
 }

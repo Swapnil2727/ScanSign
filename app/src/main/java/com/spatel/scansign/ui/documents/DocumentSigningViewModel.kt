@@ -59,7 +59,8 @@ class DocumentSigningViewModel(
     private val _pageIndex = MutableStateFlow(0)
     val pageIndex: StateFlow<Int> = _pageIndex.asStateFlow()
 
-    private var pageCount: Int = 1
+    private val _pageCount = MutableStateFlow(1)
+    val pageCount: StateFlow<Int> = _pageCount.asStateFlow()
 
     private val _pageBitmap = MutableStateFlow<Bitmap?>(null)
     val pageBitmap: StateFlow<Bitmap?> = _pageBitmap.asStateFlow()
@@ -87,7 +88,7 @@ class DocumentSigningViewModel(
             documentRepository.getById(documentId)
                 .filterNotNull()
                 .first()
-                .let { pageCount = it.pageCount.coerceAtLeast(1) }
+                .let { _pageCount.value = it.pageCount.coerceAtLeast(1) }
             loadPage()
         }
     }
@@ -111,7 +112,7 @@ class DocumentSigningViewModel(
     // ── Page navigation ───────────────────────────────────────────────────────
 
     fun nextPage() {
-        if (_pageIndex.value < pageCount - 1) {
+        if (_pageIndex.value < _pageCount.value - 1) {
             _pageIndex.value++
             loadPage()
         }
