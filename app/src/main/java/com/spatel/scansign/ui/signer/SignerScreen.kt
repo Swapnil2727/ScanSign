@@ -7,6 +7,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.ui.platform.testTag
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -84,13 +85,14 @@ import java.util.Locale
 
 @Composable
 fun SignerScreen(viewModel: SignerViewModel = koinViewModel()) {
-    val selectedTab          by viewModel.selectedTab.collectAsStateWithLifecycle()
+    val uiState              by viewModel.uiState.collectAsStateWithLifecycle()
     val completedStrokes     by viewModel.completedStrokes.collectAsStateWithLifecycle()
     val currentStroke        by viewModel.currentStroke.collectAsStateWithLifecycle()
-    val selectedImageUri     by viewModel.selectedImageUri.collectAsStateWithLifecycle()
-    val savedSignatures      by viewModel.savedSignatures.collectAsStateWithLifecycle()
-    val saveState            by viewModel.saveState.collectAsStateWithLifecycle()
-    val transparentBg        by viewModel.transparentBackground.collectAsStateWithLifecycle()
+    val selectedTab          = uiState.selectedTab
+    val selectedImageUri     = uiState.selectedImageUri
+    val savedSignatures      = uiState.savedSignatures
+    val saveState            = uiState.saveState
+    val transparentBg        = uiState.transparentBackground
 
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -264,6 +266,7 @@ private fun DrawTab(
                 .clip(RoundedCornerShape(12.dp))
                 .background(Color.White)
                 .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
+                .testTag("signature_canvas")
                 .onSizeChanged { canvasSize = it }
                 .pointerInput(Unit) {
                     detectDragGestures(

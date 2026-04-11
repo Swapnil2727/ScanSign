@@ -29,8 +29,9 @@ fun GalleryImportScreen(
     onImportComplete: () -> Unit,
     viewModel: ScannerViewModel,
 ) {
-    val scanResult by viewModel.scanResult.collectAsState()
-    val saveState by viewModel.saveState.collectAsState()
+    val uiState by viewModel.uiState.collectAsState()
+    val scanResult = uiState.scanResult
+    val saveState  = uiState.saveState
 
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickMultipleVisualMedia(),
@@ -49,7 +50,7 @@ fun GalleryImportScreen(
 
     // Launch picker only if we don't already have a pending result
     LaunchedEffect(Unit) {
-        if (viewModel.scanResult.value == null) {
+        if (viewModel.uiState.value.scanResult == null) {
             launcher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
         }
     }

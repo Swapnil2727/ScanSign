@@ -52,7 +52,7 @@ class ScannerViewModelTest {
 
     @Test
     fun `initial scanResult is null`() {
-        assertNull(viewModelWith().scanResult.value)
+        assertNull(viewModelWith().uiState.value.scanResult)
     }
 
     @Test
@@ -60,7 +60,7 @@ class ScannerViewModelTest {
         val vm = viewModelWith()
         vm.onScanSuccess(pdfUri, listOf(pageUri))
 
-        val result = vm.scanResult.value
+        val result = vm.uiState.value.scanResult
         assertEquals(pdfUri, result?.resolvedPdfUri())
         assertEquals(listOf(pageUri), result?.pageUris)
     }
@@ -71,7 +71,7 @@ class ScannerViewModelTest {
         vm.onScanSuccess(pdfUri, emptyList())
         vm.clearScanResult()
 
-        assertNull(vm.scanResult.value)
+        assertNull(vm.uiState.value.scanResult)
     }
 
     @Test
@@ -80,7 +80,7 @@ class ScannerViewModelTest {
         vm.onScanSuccess(pdfUri, emptyList())
         vm.clearScanResult()
 
-        assertTrue(vm.saveState.value is SaveState.Idle)
+        assertTrue(vm.uiState.value.saveState is SaveState.Idle)
     }
 
     @Test
@@ -88,7 +88,7 @@ class ScannerViewModelTest {
         val vm = viewModelWith()
         vm.onScanSuccess(pdfUri, emptyList())
 
-        assertEquals(emptyList<Uri>(), vm.scanResult.value?.pageUris)
+        assertEquals(emptyList<Uri>(), vm.uiState.value.scanResult?.pageUris)
     }
 
     @Test
@@ -98,14 +98,14 @@ class ScannerViewModelTest {
         vm.onScanSuccess(pdfUri, emptyList())
         vm.onScanSuccess(secondPdf, emptyList())
 
-        assertEquals(secondPdf, vm.scanResult.value?.resolvedPdfUri())
+        assertEquals(secondPdf, vm.uiState.value.scanResult?.resolvedPdfUri())
     }
 
     // ── Save state ────────────────────────────────────────────────────────────
 
     @Test
     fun `initial saveState is Idle`() {
-        assertTrue(viewModelWith().saveState.value is SaveState.Idle)
+        assertTrue(viewModelWith().uiState.value.saveState is SaveState.Idle)
     }
 
     @Test
@@ -115,7 +115,7 @@ class ScannerViewModelTest {
 
         vm.save("My Scan")
 
-        val state = vm.saveState.value
+        val state = vm.uiState.value.saveState
         assertTrue(state is SaveState.Success)
         assertEquals(fakeDocument, (state as SaveState.Success).document)
     }
@@ -127,7 +127,7 @@ class ScannerViewModelTest {
 
         vm.save("My Scan")
 
-        val state = vm.saveState.value
+        val state = vm.uiState.value.saveState
         assertTrue(state is SaveState.Error)
         assertEquals("Disk full", (state as SaveState.Error).message)
     }
@@ -138,7 +138,7 @@ class ScannerViewModelTest {
 
         vm.save("My Scan")
 
-        assertTrue(vm.saveState.value is SaveState.Idle)
+        assertTrue(vm.uiState.value.saveState is SaveState.Idle)
     }
 
     // ── Gallery import ────────────────────────────────────────────────────────
@@ -152,7 +152,7 @@ class ScannerViewModelTest {
 
         vm.onGalleryImagesSelected(listOf(imageUri1, imageUri2))
 
-        val result = vm.scanResult.value
+        val result = vm.uiState.value.scanResult
         assertEquals(listOf(imageUri1, imageUri2), result?.pageUris)
     }
 
@@ -164,7 +164,7 @@ class ScannerViewModelTest {
         vm.onGalleryImagesSelected(listOf(pageUri))
 
         // scanResult is replaced — not stale from prior ML Kit scan
-        val result = vm.scanResult.value
+        val result = vm.uiState.value.scanResult
         assertEquals(listOf(pageUri), result?.pageUris)
     }
 
@@ -174,7 +174,7 @@ class ScannerViewModelTest {
 
         vm.onGalleryImagesSelected(listOf(pageUri))
 
-        val state = vm.saveState.value
+        val state = vm.uiState.value.saveState
         assertTrue(state is SaveState.Error)
         assertEquals("Out of memory", (state as SaveState.Error).message)
     }
