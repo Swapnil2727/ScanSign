@@ -89,6 +89,7 @@ private const val RECENT_LIMIT = 5
 
 @Composable
 fun DocumentsScreen(
+    userName: String = "",
     onScanClick: () -> Unit = {},
     onGalleryClick: () -> Unit = {},
     onDocumentClick: (String) -> Unit = {},
@@ -117,6 +118,7 @@ fun DocumentsScreen(
     }
 
     DocumentsContent(
+        userName = userName,
         documents = documents,
         searchQuery = searchQuery,
         isSearchActive = isSearchActive,
@@ -140,6 +142,7 @@ fun DocumentsScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun DocumentsContent(
+    userName: String,
     documents: List<Document>,
     searchQuery: String,
     isSearchActive: Boolean,
@@ -173,7 +176,7 @@ private fun DocumentsContent(
                             contentAlignment = Alignment.Center,
                         ) {
                             Text(
-                                "SP",
+                                computeInitials(userName),
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer,
                             )
@@ -215,7 +218,7 @@ private fun DocumentsContent(
                 contentPadding = PaddingValues(bottom = 16.dp),
             ) {
                 if (!isSearchActive) {
-                    item { GreetingHeader(documentCount = documents.size) }
+                    item { GreetingHeader(userName = userName, documentCount = documents.size) }
                     item {
                         QuickActionsGrid(
                             onScanClick = onScanClick,
@@ -344,7 +347,7 @@ private fun SearchBar(
 // ── Private composables ───────────────────────────────────────────────────────
 
 @Composable
-private fun GreetingHeader(documentCount: Int) {
+private fun GreetingHeader(userName: String, documentCount: Int) {
     val greeting = remember {
         val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
         when {
@@ -360,7 +363,7 @@ private fun GreetingHeader(documentCount: Int) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Text(
-            "Saumil",
+            userName,
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
         )
@@ -391,15 +394,17 @@ private fun QuickActionsGrid(
             icon = Icons.Filled.CameraAlt,
             title = "Scan",
             subtitle = "Document",
-            containerColor = Color(0xFF1565C0),
+            containerColor = MaterialTheme.colorScheme.primaryContainer,
+            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
             onClick = onScanClick,
         )
         QuickActionCard(
             modifier = Modifier.weight(1f),
             icon = Icons.Filled.Photo,
-            title = "Scan from",
-            subtitle = "Gallery",
-            containerColor = Color(0xFF00897B),
+            title = "Import",
+            subtitle = "From Gallery",
+            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
             onClick = onGalleryClick,
         )
     }
@@ -412,12 +417,14 @@ private fun QuickActionCard(
     title: String,
     subtitle: String,
     containerColor: Color,
+    contentColor: Color,
     onClick: () -> Unit = {},
 ) {
     Card(
-        modifier = modifier.heightIn(min = 100.dp),
-        shape = RoundedCornerShape(16.dp),
+        modifier = modifier.heightIn(min = 110.dp),
+        shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = containerColor),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         onClick = onClick,
     ) {
         Column(
@@ -426,15 +433,31 @@ private fun QuickActionCard(
                 .padding(16.dp),
             verticalArrangement = Arrangement.SpaceBetween,
         ) {
-            Icon(
-                icon,
-                contentDescription = null,
-                tint = Color.White,
-                modifier = Modifier.size(28.dp)
-            )
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .background(contentColor.copy(alpha = 0.1f), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    icon,
+                    contentDescription = null,
+                    tint = contentColor,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
             Column {
-                Text(title, color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
-                Text(subtitle, color = Color.White.copy(alpha = 0.8f), fontSize = 12.sp)
+                Text(
+                    text = title,
+                    color = contentColor,
+                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Text(
+                    text = subtitle,
+                    color = contentColor.copy(alpha = 0.7f),
+                    style = MaterialTheme.typography.labelMedium
+                )
             }
         }
     }
@@ -490,16 +513,41 @@ private fun RecentDocumentsHeader(
 
 @Composable
 private fun EmptyDocumentsHint() {
-    Box(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 32.dp),
-        contentAlignment = Alignment.Center,
+            .padding(horizontal = 20.dp, vertical = 48.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
+        Box(
+            modifier = Modifier
+                .size(72.dp)
+                .background(
+                    MaterialTheme.colorScheme.surfaceVariant,
+                    CircleShape
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Description,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(36.dp)
+            )
+        }
+        Spacer(modifier = Modifier.height(16.dp))
         Text(
-            "No documents yet. Tap Scan to get started.",
+            text = "No documents yet",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = "Tap Scan to digitize your first paper",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center
         )
     }
 }
@@ -653,6 +701,7 @@ private val previewDocuments = listOf(
 private fun DocumentsMorningPreview() {
     ScanSignTheme {
         DocumentsContent(
+            userName = "Saumil Patel",
             documents = previewDocuments,
             searchQuery = "",
             isSearchActive = false,
@@ -674,6 +723,7 @@ private fun DocumentsMorningPreview() {
 private fun DocumentsEmptyPreview() {
     ScanSignTheme {
         DocumentsContent(
+            userName = "Steven Smith",
             documents = emptyList(),
             searchQuery = "",
             isSearchActive = false,
@@ -695,6 +745,7 @@ private fun DocumentsEmptyPreview() {
 private fun DocumentsSearchActivePreview() {
     ScanSignTheme {
         DocumentsContent(
+            userName = "Saumil Patel",
             documents = previewDocuments.take(1),
             searchQuery = "Invoice",
             isSearchActive = true,
@@ -716,6 +767,7 @@ private fun DocumentsSearchActivePreview() {
 private fun DocumentsSearchNoResultsPreview() {
     ScanSignTheme {
         DocumentsContent(
+            userName = "Saumil Patel",
             documents = emptyList(),
             searchQuery = "receipt",
             isSearchActive = true,
