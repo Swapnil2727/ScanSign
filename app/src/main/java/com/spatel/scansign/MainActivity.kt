@@ -27,7 +27,10 @@ class MainActivity : ComponentActivity() {
             }
 
             ScanSignTheme(darkTheme = darkTheme) {
-                AppNavigation()
+                AppNavigation(
+                    hasCompletedOnboarding = userPreferences.hasCompletedOnboarding,
+                    userName = userPreferences.userName,
+                )
             }
         }
     }

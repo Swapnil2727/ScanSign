@@ -15,6 +15,7 @@ sealed interface DocumentViewerUiState {
     data object Loading : DocumentViewerUiState
     data class Success(
         val documentTitle: String,
+        val pdfPath: String?,
         val pages: List<DocumentPage>,
     ) : DocumentViewerUiState
 }
@@ -31,6 +32,7 @@ class DocumentViewerViewModel(
         if (document != null) {
             DocumentViewerUiState.Success(
                 documentTitle = document.title,
+                pdfPath       = document.pdfPath,
                 pages         = pages,
             )
         } else {

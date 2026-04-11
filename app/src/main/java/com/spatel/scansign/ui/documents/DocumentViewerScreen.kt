@@ -22,7 +22,8 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Draw
+import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -39,12 +40,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.spatel.scansign.core.model.DocumentPage
 import com.spatel.scansign.core.ui.preview.ThemePreviews
 import com.spatel.scansign.core.ui.theme.ScanSignTheme
+import com.spatel.scansign.util.shareDocument
 import kotlinx.coroutines.launch
 import java.io.File
 
@@ -56,6 +60,7 @@ fun DocumentViewerScreen(
     viewModel: DocumentViewerViewModel,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
 
     when (val state = uiState) {
         is DocumentViewerUiState.Loading -> {
@@ -65,11 +70,12 @@ fun DocumentViewerScreen(
         }
         is DocumentViewerUiState.Success -> {
             DocumentViewerContent(
-                title       = state.documentTitle,
-                pages       = state.pages,
-                initialPage = initialPage,
-                onBack      = onBack,
-                onSignClick = onSignClick,
+                title        = state.documentTitle,
+                pages        = state.pages,
+                initialPage  = initialPage,
+                onBack       = onBack,
+                onSignClick  = onSignClick,
+                onShareClick = { shareDocument(context, state.pdfPath) },
             )
         }
     }
@@ -83,6 +89,7 @@ private fun DocumentViewerContent(
     initialPage: Int,
     onBack: () -> Unit,
     onSignClick: () -> Unit,
+    onShareClick: () -> Unit,
 ) {
     val pageCount      = pages.size.coerceAtLeast(1)
     val pagerState     = rememberPagerState(initialPage = initialPage.coerceIn(0, pageCount - 1)) { pageCount }
@@ -97,10 +104,12 @@ private fun DocumentViewerContent(
         topBar = {
             TopAppBar(
                 title = {
+                    val displayTitle = if (title.length > 10) "${title.take(10)}…" else title
                     Text(
-                        text     = "$title  ·  ${pagerState.currentPage + 1} / $pageCount",
+                        text     = displayTitle,
                         style    = MaterialTheme.typography.titleMedium,
                         maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                     )
                 },
                 navigationIcon = {
@@ -109,8 +118,11 @@ private fun DocumentViewerContent(
                     }
                 },
                 actions = {
+                    IconButton(onClick = onShareClick) {
+                        Icon(Icons.Outlined.Share, contentDescription = "Share document")
+                    }
                     IconButton(onClick = onSignClick) {
-                        Icon(Icons.Filled.Edit, contentDescription = "Sign document")
+                        Icon(Icons.Filled.Draw, contentDescription = "Sign document")
                     }
                 },
             )
@@ -242,11 +254,12 @@ private val previewPages = listOf(
 private fun DocumentViewerContentPreview() {
     ScanSignTheme {
         DocumentViewerContent(
-            title       = "Invoice March 2025",
-            pages       = previewPages,
-            initialPage = 0,
-            onBack      = {},
-            onSignClick = {},
+            title        = "Invoice March 2025",
+            pages        = previewPages,
+            initialPage  = 0,
+            onBack       = {},
+            onSignClick  = {},
+            onShareClick = {},
         )
     }
 }
@@ -256,11 +269,12 @@ private fun DocumentViewerContentPreview() {
 private fun DocumentViewerSinglePagePreview() {
     ScanSignTheme {
         DocumentViewerContent(
-            title       = "Single Page Doc",
-            pages       = listOf(DocumentPage("p1", "doc-1", 0, "")),
-            initialPage = 0,
-            onBack      = {},
-            onSignClick = {},
+            title        = "Single Page Doc",
+            pages        = listOf(DocumentPage("p1", "doc-1", 0, "")),
+            initialPage  = 0,
+            onBack       = {},
+            onSignClick  = {},
+            onShareClick = {},
         )
     }
 }
