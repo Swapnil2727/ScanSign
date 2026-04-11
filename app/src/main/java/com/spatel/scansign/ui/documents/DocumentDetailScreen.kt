@@ -2,6 +2,7 @@ package com.spatel.scansign.ui.documents
 
 import android.content.Context
 import android.content.Intent
+import com.spatel.scansign.util.shareDocument
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -472,24 +473,6 @@ private fun DeleteConfirmDialog(
             TextButton(onClick = onDismiss) { Text("Cancel") }
         },
     )
-}
-
-// ── Share ─────────────────────────────────────────────────────────────────────
-
-private fun shareDocument(context: Context, pdfPath: String) {
-    val file = File(pdfPath)
-    if (!file.exists()) return
-    val uri = FileProvider.getUriForFile(
-        context,
-        "${context.packageName}.fileprovider",
-        file,
-    )
-    val intent = Intent(Intent.ACTION_SEND).apply {
-        type = "application/pdf"
-        putExtra(Intent.EXTRA_STREAM, uri)
-        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-    }
-    context.startActivity(Intent.createChooser(intent, "Share PDF"))
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
