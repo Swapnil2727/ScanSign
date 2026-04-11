@@ -4,9 +4,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.Draw
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.CameraAlt
+import androidx.compose.material.icons.outlined.Draw
 import androidx.compose.material.icons.outlined.FolderOpen
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Icon
@@ -23,6 +25,10 @@ import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.ui.NavDisplay
 import com.spatel.scansign.ui.documents.DocumentDetailScreen
 import com.spatel.scansign.ui.documents.DocumentDetailViewModel
+import com.spatel.scansign.ui.documents.DocumentSigningScreen
+import com.spatel.scansign.ui.documents.DocumentSigningViewModel
+import com.spatel.scansign.ui.documents.DocumentViewerScreen
+import com.spatel.scansign.ui.documents.DocumentViewerViewModel
 import com.spatel.scansign.ui.documents.DocumentsScreen
 import com.spatel.scansign.ui.documents.DocumentsViewModel
 import com.spatel.scansign.ui.scanner.GalleryImportScreen
@@ -30,6 +36,7 @@ import com.spatel.scansign.ui.scanner.ScanConfirmScreen
 import com.spatel.scansign.ui.scanner.ScannerScreen
 import com.spatel.scansign.ui.scanner.ScannerViewModel
 import com.spatel.scansign.ui.settings.SettingsScreen
+import com.spatel.scansign.ui.signer.SignerScreen
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 
@@ -43,6 +50,8 @@ fun AppNavigation() {
     val showBottomBar = currentRoute !is ScannerRoute
         && currentRoute !is ScanConfirmRoute
         && currentRoute !is GalleryImportRoute
+        && currentRoute !is DocumentSigningRoute
+        && currentRoute !is DocumentViewerRoute
 
     Scaffold(
         bottomBar = {
@@ -104,6 +113,9 @@ fun AppNavigation() {
                         viewModel = scannerViewModel,
                     )
                 }
+                entry<SignerRoute> {
+                    SignerScreen()
+                }
                 entry<SettingsRoute> {
                     SettingsScreen()
                 }
@@ -115,7 +127,36 @@ fun AppNavigation() {
                     DocumentDetailScreen(
                         onBack = { backStack.removeAt(backStack.lastIndex) },
                         onDocumentDeleted = { backStack.removeAt(backStack.lastIndex) },
+                        onSignClick = { backStack.add(DocumentSigningRoute(key.documentId)) },
+                        onPageClick = { page -> backStack.add(DocumentViewerRoute(key.documentId, page)) },
                         viewModel = detailViewModel,
+                    )
+                }
+                entry<DocumentViewerRoute> { key ->
+                    val viewerViewModel: DocumentViewerViewModel = koinViewModel(
+                        key = key.documentId,
+                        parameters = { parametersOf(key.documentId) },
+                    )
+                    DocumentViewerScreen(
+                        initialPage = key.initialPage,
+                        onBack      = { backStack.removeAt(backStack.lastIndex) },
+                        onSignClick = { backStack.add(DocumentSigningRoute(key.documentId)) },
+                        viewModel   = viewerViewModel,
+                    )
+                }
+                entry<DocumentSigningRoute> { key ->
+                    val signingViewModel: DocumentSigningViewModel = koinViewModel(
+                        key = key.documentId,
+                        parameters = { parametersOf(key.documentId) },
+                    )
+                    DocumentSigningScreen(
+                        onBack              = { backStack.removeAt(backStack.lastIndex) },
+                        onSigned            = { backStack.removeAt(backStack.lastIndex) },
+                        onNavigateToSigner  = {
+                            backStack.clear()
+                            backStack.add(SignerRoute)
+                        },
+                        viewModel           = signingViewModel,
                     )
                 }
             },
@@ -135,6 +176,7 @@ private data class BottomNavItem(
 private val bottomNavItems = listOf(
     BottomNavItem(DocumentsRoute, "Docs", Icons.Filled.FolderOpen, Icons.Outlined.FolderOpen),
     BottomNavItem(ScannerRoute, "Scan", Icons.Filled.CameraAlt, Icons.Outlined.CameraAlt),
+    BottomNavItem(SignerRoute, "Sign", Icons.Filled.Draw, Icons.Outlined.Draw),
     BottomNavItem(SettingsRoute, "Settings", Icons.Filled.Settings, Icons.Outlined.Settings),
 )
 

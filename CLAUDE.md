@@ -207,27 +207,24 @@ Feature-based modules with layer separation:
 
 ### Week 8: Core Signing Module (`:core:signing`) + PDF Signing Infrastructure
 
-**8.1 Android Keystore Wrapper**
-- `KeystoreManager`: generate RSA key pair, retrieve, delete
-- Self-signed X.509 certificate generation
+**8.1 Signing Infrastructure** ✅
 - `SignatureEntity` added to Room — migration version 2
 - `SignatureDao`: insert, getAll, delete
+- `KeystoreManager`: RSA key generation wrapper (built but not exposed in UI — digital signing deferred, see Key Decisions)
 
-**8.2 PDF Signing via PDFBox**
-- `PdfSigner` in `:core:pdf`: open existing PDF, embed signature (bitmap or digital cert) at given coordinates, save
-- `PdfVerifier`: validate digital signature embedded in a PDF
-- `SignDocumentUseCase`, `VerifySignatureUseCase`
+**8.2 PDF Signing via PDFBox** ✅
+- `PdfSigner` in `:core:pdf`: open existing PDF, embed bitmap signature at given coordinates, save
+- `SignDocumentUseCase`: documentId + bitmap → embed → markAsSigned
 
 ---
 
 ### Week 9: Signing Feature UI
 
-**9.1 Signing Screen**
+**9.1 Signing Screen** ✅
 - Replace placeholder `SignerScreen`
-- Three tabs: Draw, Image, Digital
-- **Draw**: canvas with stroke input, pressure simulation, undo, clear, save as bitmap
-- **Image**: photo picker / gallery, crop to signature bounds
-- **Digital**: create or select existing Keystore key pair, display certificate details
+- Two tabs: Draw, Image (Digital tab removed — see Key Decisions)
+- **Draw**: Bézier-smoothed canvas with `detectDragGestures`, undo, clear, save as bitmap
+- **Image**: `PickVisualMedia` launcher, preview, save
 
 **9.2 PDF Signing Flow**
 - Entry point: document detail → "Sign" action
@@ -240,9 +237,9 @@ Feature-based modules with layer separation:
 ### Week 10: Signing Tests + Integration
 
 **10.1 Signing Tests**
-- Unit test `SignDocumentUseCase`, `VerifySignatureUseCase` with fakes
-- Keystore tests on emulator + real device
-- PDFBox signing round-trip test (sign → verify → assert valid)
+- Unit test `SignDocumentUseCase` with fakes ✅ (done in Week 8)
+- `SignerViewModel` unit tests ✅ (done in Week 9)
+- PDFBox signing round-trip test (sign → open → assert bitmap embedded)
 
 **10.2 Full App Regression**
 - End-to-end: scan → list → sign → verify → share
@@ -316,6 +313,7 @@ Feature-based modules with layer separation:
 - **Single-phase delivery for core features**: Scanner + Signing ship together in Week 11. No scanner-only interim release — users get the full product from day one.
 - **Room deferred to Week 4**: Built alongside the Scanner feature — entities shaped by real usage.
 - **Navigation 3**: Type-safe `@Serializable` routes + `NavDisplay` + `SnapshotStateList` back stack.
+- **Digital (PKCS#7) signing removed from Phase 1**: `SignDocumentUseCase` accepts a `Bitmap` — real PKCS#7 PDF digital signatures require a full Apache PDFBox signing chain (CMS, certificate chain, TSA) which adds significant complexity and risk before the first Play Store release. The `KeystoreManager` infrastructure remains in `:core:signing` for potential Phase 2 use if analytics show demand. The Signer screen ships with **Draw + Image tabs only**.
 - **Local-first, no cloud sync**: All data stays on device; no Firebase Storage, no Retrofit.
 - **No Hilt**: Koin chosen for future KMP compatibility.
 - **Domain layer stays pure**: No Android or Koin imports in use cases.
@@ -328,8 +326,8 @@ Feature-based modules with layer separation:
 
 **Phase 1 (Week 11)**
 - ✅ Scan multi-page documents, manage and share PDFs — fully offline
-- ✅ Draw, image, and digital signatures embedded in PDFs
-- ✅ Signature verification working
+- ✅ Draw and image signatures embedded in PDFs (visual signing)
+- ✅ Digital/PKCS#7 signing deferred post-launch (see Key Decisions)
 - ✅ 80%+ domain + data layer test coverage
 - ✅ Cold start < 2 seconds
 - ✅ AAB signed and live on Play Store
@@ -343,5 +341,5 @@ Feature-based modules with layer separation:
 
 ---
 
-**Version**: 6.0
-**Status**: Week 6 Complete, Week 7 In Progress
+**Version**: 7.0
+**Status**: Week 9.1 Complete (Signer Screen — Draw + Image tabs), Week 9.2 In Progress (PDF signing flow)

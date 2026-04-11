@@ -23,6 +23,8 @@ interface DocumentRepository {
 
     suspend fun delete(id: String)
 
+    suspend fun markAsSigned(id: String)
+
     companion object {
         operator fun invoke(
             dao: DocumentDao,
