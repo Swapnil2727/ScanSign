@@ -84,13 +84,14 @@ import java.util.Locale
 
 @Composable
 fun SignerScreen(viewModel: SignerViewModel = koinViewModel()) {
-    val selectedTab          by viewModel.selectedTab.collectAsStateWithLifecycle()
+    val uiState              by viewModel.uiState.collectAsStateWithLifecycle()
     val completedStrokes     by viewModel.completedStrokes.collectAsStateWithLifecycle()
     val currentStroke        by viewModel.currentStroke.collectAsStateWithLifecycle()
-    val selectedImageUri     by viewModel.selectedImageUri.collectAsStateWithLifecycle()
-    val savedSignatures      by viewModel.savedSignatures.collectAsStateWithLifecycle()
-    val saveState            by viewModel.saveState.collectAsStateWithLifecycle()
-    val transparentBg        by viewModel.transparentBackground.collectAsStateWithLifecycle()
+    val selectedTab          = uiState.selectedTab
+    val selectedImageUri     = uiState.selectedImageUri
+    val savedSignatures      = uiState.savedSignatures
+    val saveState            = uiState.saveState
+    val transparentBg        = uiState.transparentBackground
 
     val snackbarHostState = remember { SnackbarHostState() }
 

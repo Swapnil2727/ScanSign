@@ -73,14 +73,15 @@ fun DocumentSigningScreen(
     onNavigateToSigner: () -> Unit,
     viewModel: DocumentSigningViewModel,
 ) {
-    val signatures       by viewModel.signatures.collectAsStateWithLifecycle()
-    val selectedSig      by viewModel.selectedSignature.collectAsStateWithLifecycle()
-    val pageIndex        by viewModel.pageIndex.collectAsStateWithLifecycle()
-    val pageCount        by viewModel.pageCount.collectAsStateWithLifecycle()
-    val pageBitmap       by viewModel.pageBitmap.collectAsStateWithLifecycle()
-    val signatureOffset  by viewModel.signatureOffset.collectAsStateWithLifecycle()
-    val signatureSize    by viewModel.signatureSize.collectAsStateWithLifecycle()
-    val signingState     by viewModel.signingState.collectAsStateWithLifecycle()
+    val uiState         by viewModel.uiState.collectAsStateWithLifecycle()
+    val signatureOffset by viewModel.signatureOffset.collectAsStateWithLifecycle()
+    val signatureSize   by viewModel.signatureSize.collectAsStateWithLifecycle()
+    val signatures      = uiState.signatures
+    val selectedSig     = uiState.selectedSignature
+    val pageIndex       = uiState.pageIndex
+    val pageCount       = uiState.pageCount
+    val pageBitmap      = uiState.pageBitmap
+    val signingState    = uiState.signingState
 
     val snackbarHostState = remember { SnackbarHostState() }
 

@@ -37,13 +37,13 @@ class SignerViewModelTest {
 
     @Test
     fun `initial tab is DRAW`() = runTest {
-        assertEquals(SignerTab.DRAW, viewModel.selectedTab.value)
+        assertEquals(SignerTab.DRAW, viewModel.uiState.value.selectedTab)
     }
 
     @Test
     fun `selectTab updates selected tab`() = runTest {
         viewModel.selectTab(SignerTab.IMAGE)
-        assertEquals(SignerTab.IMAGE, viewModel.selectedTab.value)
+        assertEquals(SignerTab.IMAGE, viewModel.uiState.value.selectedTab)
     }
 
     // ── Drawing ───────────────────────────────────────────────────────────────
@@ -127,7 +127,7 @@ class SignerViewModelTest {
     fun `onImageSelected sets selectedImageUri`() {
         val uri = mockk<android.net.Uri>()
         viewModel.onImageSelected(uri)
-        assertEquals(uri, viewModel.selectedImageUri.value)
+        assertEquals(uri, viewModel.uiState.value.selectedImageUri)
     }
 
     // ── Delete ────────────────────────────────────────────────────────────────

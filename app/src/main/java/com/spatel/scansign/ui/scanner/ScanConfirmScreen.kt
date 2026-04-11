@@ -47,8 +47,9 @@ fun ScanConfirmScreen(
     onSaveConfirmed: () -> Unit,
     viewModel: ScannerViewModel,
 ) {
-    val scanResult by viewModel.scanResult.collectAsState()
-    val saveState by viewModel.saveState.collectAsState()
+    val uiState by viewModel.uiState.collectAsState()
+    val scanResult = uiState.scanResult
+    val saveState  = uiState.saveState
 
     LaunchedEffect(Unit) {
         if (scanResult == null) onDiscard()
