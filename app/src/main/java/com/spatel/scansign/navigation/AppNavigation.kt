@@ -31,6 +31,7 @@ import com.spatel.scansign.ui.documents.DocumentViewerScreen
 import com.spatel.scansign.ui.documents.DocumentViewerViewModel
 import com.spatel.scansign.ui.documents.DocumentsScreen
 import com.spatel.scansign.ui.documents.DocumentsViewModel
+import com.spatel.scansign.ui.onboarding.OnboardingScreen
 import com.spatel.scansign.ui.scanner.GalleryImportScreen
 import com.spatel.scansign.ui.scanner.ScanConfirmScreen
 import com.spatel.scansign.ui.scanner.ScannerScreen
@@ -41,8 +42,15 @@ import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 
 @Composable
-fun AppNavigation() {
-    val backStack = remember { mutableStateListOf<Any>(DocumentsRoute) }
+fun AppNavigation(
+    hasCompletedOnboarding: Boolean,
+    userName: String,
+) {
+    val backStack = remember(hasCompletedOnboarding) {
+        mutableStateListOf<Any>(
+            if (hasCompletedOnboarding) DocumentsRoute else OnboardingRoute
+        )
+    }
     val currentRoute = backStack.last()
     val scannerViewModel: ScannerViewModel = koinViewModel()
     val documentsViewModel: DocumentsViewModel = koinViewModel()
@@ -52,6 +60,7 @@ fun AppNavigation() {
         && currentRoute !is GalleryImportRoute
         && currentRoute !is DocumentSigningRoute
         && currentRoute !is DocumentViewerRoute
+        && currentRoute !is OnboardingRoute
 
     Scaffold(
         bottomBar = {
@@ -78,8 +87,19 @@ fun AppNavigation() {
                 .padding(innerPadding),
             onBack = { if (backStack.size > 1) backStack.removeAt(backStack.lastIndex) },
             entryProvider = entryProvider {
+                entry<OnboardingRoute> {
+                    val vm: com.spatel.scansign.ui.onboarding.OnboardingViewModel = koinViewModel()
+                    OnboardingScreen(
+                        viewModel = vm,
+                        onComplete = {
+                            backStack.clear()
+                            backStack.add(DocumentsRoute)
+                        },
+                    )
+                }
                 entry<DocumentsRoute> {
                     DocumentsScreen(
+                        userName = userName,
                         onScanClick = { backStack.add(ScannerRoute) },
                         onGalleryClick = { backStack.add(GalleryImportRoute) },
                         onDocumentClick = { id -> backStack.add(DocumentDetailRoute(id)) },

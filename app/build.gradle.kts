@@ -62,6 +62,7 @@ dependencies {
 
     implementation(libs.mlkit.document.scanner)
     implementation(libs.coil.compose)
+    implementation(libs.accompanist.pager)
 
     implementation(libs.kotlinx.coroutines.android)
 
