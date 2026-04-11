@@ -40,6 +40,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -47,6 +48,7 @@ import coil.compose.AsyncImage
 import com.spatel.scansign.core.model.DocumentPage
 import com.spatel.scansign.core.ui.preview.ThemePreviews
 import com.spatel.scansign.core.ui.theme.ScanSignTheme
+import com.spatel.scansign.util.shareDocument
 import kotlinx.coroutines.launch
 import java.io.File
 
@@ -55,10 +57,10 @@ fun DocumentViewerScreen(
     initialPage: Int,
     onBack: () -> Unit,
     onSignClick: () -> Unit,
-    onShareClick: () -> Unit = {},
     viewModel: DocumentViewerViewModel,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
 
     when (val state = uiState) {
         is DocumentViewerUiState.Loading -> {
@@ -73,7 +75,7 @@ fun DocumentViewerScreen(
                 initialPage  = initialPage,
                 onBack       = onBack,
                 onSignClick  = onSignClick,
-                onShareClick = onShareClick,
+                onShareClick = { shareDocument(context, state.pdfPath) },
             )
         }
     }
