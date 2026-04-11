@@ -2,6 +2,9 @@ package com.spatel.scansign.navigation
 
 import kotlinx.serialization.Serializable
 
+// Onboarding destination (shown only on first launch)
+@Serializable data object OnboardingRoute
+
 // Top-level bottom-nav destinations
 @Serializable data object DocumentsRoute
 @Serializable data object ScannerRoute

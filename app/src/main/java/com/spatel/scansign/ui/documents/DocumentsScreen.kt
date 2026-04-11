@@ -89,6 +89,7 @@ private const val RECENT_LIMIT = 5
 
 @Composable
 fun DocumentsScreen(
+    userName: String = "",
     onScanClick: () -> Unit = {},
     onGalleryClick: () -> Unit = {},
     onDocumentClick: (String) -> Unit = {},
@@ -117,6 +118,7 @@ fun DocumentsScreen(
     }
 
     DocumentsContent(
+        userName = userName,
         documents = documents,
         searchQuery = searchQuery,
         isSearchActive = isSearchActive,
@@ -140,6 +142,7 @@ fun DocumentsScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun DocumentsContent(
+    userName: String,
     documents: List<Document>,
     searchQuery: String,
     isSearchActive: Boolean,
@@ -173,7 +176,7 @@ private fun DocumentsContent(
                             contentAlignment = Alignment.Center,
                         ) {
                             Text(
-                                "SP",
+                                computeInitials(userName),
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer,
                             )
@@ -215,7 +218,7 @@ private fun DocumentsContent(
                 contentPadding = PaddingValues(bottom = 16.dp),
             ) {
                 if (!isSearchActive) {
-                    item { GreetingHeader(documentCount = documents.size) }
+                    item { GreetingHeader(userName = userName, documentCount = documents.size) }
                     item {
                         QuickActionsGrid(
                             onScanClick = onScanClick,
@@ -344,7 +347,7 @@ private fun SearchBar(
 // ── Private composables ───────────────────────────────────────────────────────
 
 @Composable
-private fun GreetingHeader(documentCount: Int) {
+private fun GreetingHeader(userName: String, documentCount: Int) {
     val greeting = remember {
         val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
         when {
@@ -360,7 +363,7 @@ private fun GreetingHeader(documentCount: Int) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Text(
-            "Saumil",
+            userName,
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
         )
@@ -646,6 +649,18 @@ private val previewDocuments = listOf(
     ),
 )
 
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+private fun computeInitials(name: String): String {
+    val parts = name.trim().split(" ").filter { it.isNotEmpty() }
+    return when {
+        parts.size >= 2 -> "${parts[0][0]}${parts.last()[0]}"
+        parts.isNotEmpty() && parts[0].length >= 2 -> "${parts[0][0]}${parts[0][1]}"
+        parts.isNotEmpty() -> parts[0][0].toString()
+        else -> "?"
+    }.uppercase()
+}
+
 // ── Previews ──────────────────────────────────────────────────────────────────
 
 @ThemePreviews
@@ -653,6 +668,7 @@ private val previewDocuments = listOf(
 private fun DocumentsMorningPreview() {
     ScanSignTheme {
         DocumentsContent(
+            userName = "Saumil Patel",
             documents = previewDocuments,
             searchQuery = "",
             isSearchActive = false,
@@ -686,6 +702,7 @@ private fun DocumentsEmptyPreview() {
             onGalleryClick = {},
             onDocumentClick = {},
             onDeleteRequest = {},
+            userName = "Steven Smith",
         )
     }
 }
@@ -695,6 +712,7 @@ private fun DocumentsEmptyPreview() {
 private fun DocumentsSearchActivePreview() {
     ScanSignTheme {
         DocumentsContent(
+            userName = "Saumil Patel",
             documents = previewDocuments.take(1),
             searchQuery = "Invoice",
             isSearchActive = true,
@@ -716,6 +734,7 @@ private fun DocumentsSearchActivePreview() {
 private fun DocumentsSearchNoResultsPreview() {
     ScanSignTheme {
         DocumentsContent(
+            userName = "Saumil Patel",
             documents = emptyList(),
             searchQuery = "receipt",
             isSearchActive = true,
