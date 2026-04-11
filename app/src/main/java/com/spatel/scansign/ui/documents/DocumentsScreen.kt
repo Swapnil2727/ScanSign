@@ -4,6 +4,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -68,9 +69,9 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.spatel.scansign.core.model.Document
 import com.spatel.scansign.core.model.DocumentStatus
@@ -82,6 +83,7 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+import androidx.compose.material.icons.filled.MoreVert
 
 private const val RECENT_LIMIT = 5
 
@@ -353,7 +355,7 @@ private fun GreetingHeader(userName: String, documentCount: Int) {
         when {
             hour < 12 -> "Good morning,"
             hour < 18 -> "Good afternoon,"
-            else      -> "Good evening,"
+            else -> "Good evening,"
         }
     }
     Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)) {
@@ -394,15 +396,17 @@ private fun QuickActionsGrid(
             icon = Icons.Filled.CameraAlt,
             title = "Scan",
             subtitle = "Document",
-            containerColor = Color(0xFF1565C0),
+            containerColor = MaterialTheme.colorScheme.primaryContainer,
+            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
             onClick = onScanClick,
         )
         QuickActionCard(
             modifier = Modifier.weight(1f),
             icon = Icons.Filled.Photo,
-            title = "Scan from",
-            subtitle = "Gallery",
-            containerColor = Color(0xFF00897B),
+            title = "Import",
+            subtitle = "From Gallery",
+            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
             onClick = onGalleryClick,
         )
     }
@@ -415,12 +419,14 @@ private fun QuickActionCard(
     title: String,
     subtitle: String,
     containerColor: Color,
+    contentColor: Color,
     onClick: () -> Unit = {},
 ) {
     Card(
-        modifier = modifier.heightIn(min = 100.dp),
-        shape = RoundedCornerShape(16.dp),
+        modifier = modifier.heightIn(min = 110.dp),
+        shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = containerColor),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         onClick = onClick,
     ) {
         Column(
@@ -429,15 +435,31 @@ private fun QuickActionCard(
                 .padding(16.dp),
             verticalArrangement = Arrangement.SpaceBetween,
         ) {
-            Icon(
-                icon,
-                contentDescription = null,
-                tint = Color.White,
-                modifier = Modifier.size(28.dp)
-            )
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .background(contentColor.copy(alpha = 0.1f), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    icon,
+                    contentDescription = null,
+                    tint = contentColor,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
             Column {
-                Text(title, color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
-                Text(subtitle, color = Color.White.copy(alpha = 0.8f), fontSize = 12.sp)
+                Text(
+                    text = title,
+                    color = contentColor,
+                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Text(
+                    text = subtitle,
+                    color = contentColor.copy(alpha = 0.7f),
+                    style = MaterialTheme.typography.labelMedium
+                )
             }
         }
     }
@@ -493,16 +515,41 @@ private fun RecentDocumentsHeader(
 
 @Composable
 private fun EmptyDocumentsHint() {
-    Box(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 32.dp),
-        contentAlignment = Alignment.Center,
+            .padding(horizontal = 20.dp, vertical = 48.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
+        Box(
+            modifier = Modifier
+                .size(72.dp)
+                .background(
+                    MaterialTheme.colorScheme.surfaceVariant,
+                    CircleShape
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Description,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(36.dp)
+            )
+        }
+        Spacer(modifier = Modifier.height(16.dp))
         Text(
-            "No documents yet. Tap Scan to get started.",
+            text = "No documents yet",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = "Tap Scan to digitize your first paper",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center
         )
     }
 }
@@ -526,66 +573,78 @@ private fun NoSearchResultsHint(query: String) {
 @Composable
 private fun DocumentListItem(doc: Document, onClick: () -> Unit) {
     val statusColor = doc.status.color()
-    Card(
+
+    Surface(
+        onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 4.dp),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-        onClick = onClick,
+            .padding(horizontal = 16.dp, vertical = 6.dp),
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surface,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
     ) {
         Row(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
+                .padding(12.dp)
+                .fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(
-                modifier = Modifier
-                    .size(44.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(MaterialTheme.colorScheme.primaryContainer),
-                contentAlignment = Alignment.Center,
+            // 1. Enhanced Thumbnail with "Paper" treatment
+            Surface(
+                modifier = Modifier.size(60.dp),
+                shape = RoundedCornerShape(8.dp),
+                shadowElevation = 2.dp,
+                color = MaterialTheme.colorScheme.surfaceVariant
             ) {
                 if (doc.thumbnailPath != null) {
                     AsyncImage(
                         model = File(doc.thumbnailPath!!),
                         contentDescription = null,
                         contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize(),
+                        modifier = Modifier.fillMaxSize()
                     )
                 } else {
-                    Icon(
-                        Icons.Filled.Description,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(24.dp),
-                    )
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Filled.Description,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
                 }
             }
-            Spacer(modifier = Modifier.width(14.dp))
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            // 2. Focused Content
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    doc.title,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Medium,
+                    text = doc.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
+                    overflow = TextOverflow.Ellipsis
                 )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
                 Text(
-                    "${doc.createdAt.formatDate()} · ${doc.pageCount} page${if (doc.pageCount == 1) "" else "s"} · ${doc.fileSize.formatSize()}",
+                    text = "${doc.createdAt.formatDate()} • ${doc.pageCount} pages",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
+
             Spacer(modifier = Modifier.width(8.dp))
+
+            // 3. Status Badge
             Surface(
                 shape = RoundedCornerShape(8.dp),
                 color = statusColor.copy(alpha = 0.12f),
             ) {
                 Text(
-                    doc.status.name.lowercase().replaceFirstChar { it.uppercase() },
+                    text = doc.status.name.lowercase().replaceFirstChar { it.uppercase() },
                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                     color = statusColor,
                     style = MaterialTheme.typography.labelSmall,
@@ -690,6 +749,7 @@ private fun DocumentsMorningPreview() {
 private fun DocumentsEmptyPreview() {
     ScanSignTheme {
         DocumentsContent(
+            userName = "Steven Smith",
             documents = emptyList(),
             searchQuery = "",
             isSearchActive = false,
@@ -702,7 +762,6 @@ private fun DocumentsEmptyPreview() {
             onGalleryClick = {},
             onDocumentClick = {},
             onDeleteRequest = {},
-            userName = "Steven Smith",
         )
     }
 }
