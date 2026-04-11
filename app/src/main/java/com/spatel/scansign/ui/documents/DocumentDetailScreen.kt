@@ -24,8 +24,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Draw
 import androidx.compose.material.icons.filled.DriveFileRenameOutline
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -168,7 +168,7 @@ private fun DocumentDetailContent(
         floatingActionButton = {
             if (uiState is DocumentDetailUiState.Success) {
                 FloatingActionButton(onClick = onSignClick) {
-                    Icon(Icons.Filled.Edit, contentDescription = "Sign document")
+                    Icon(Icons.Filled.Draw, contentDescription = "Sign document")
                 }
             }
         },

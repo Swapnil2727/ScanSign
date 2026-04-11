@@ -22,7 +22,7 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Draw
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -122,7 +122,7 @@ private fun DocumentViewerContent(
                         Icon(Icons.Outlined.Share, contentDescription = "Share document")
                     }
                     IconButton(onClick = onSignClick) {
-                        Icon(Icons.Filled.Edit, contentDescription = "Sign document")
+                        Icon(Icons.Filled.Draw, contentDescription = "Sign document")
                     }
                 },
             )
