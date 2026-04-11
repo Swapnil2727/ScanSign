@@ -151,7 +151,7 @@ class DocumentSigningViewModel(
     // ── Resize ────────────────────────────────────────────────────────────────
 
     fun resizeSignature(delta: Offset) {
-        val bmp = _pageBitmap.value ?: return
+        val bmp = _uiState.value.pageBitmap ?: return
         val cur = _signatureSize.value
         val off = _signatureOffset.value
         val minPx = bmp.width * 0.05f          // 5 % of page width minimum

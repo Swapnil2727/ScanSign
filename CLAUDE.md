@@ -322,6 +322,32 @@ Feature-based modules with layer separation:
 
 ---
 
+## Phase 2 Deferred Features
+
+The following features and improvements were assessed post-Phase 1 MVP and deferred to Phase 2 (Weeks 12–15) based on scope, complexity, and post-launch user feedback:
+
+**Logging & Observability**
+- Integrate Timber or similar logging framework for PDF signing operations
+- Why deferred: Phase 1 surfaces errors via UI (SnackBars). Post-launch analytics will identify patterns.
+- Impact: Easier production debugging, crash investigation, and performance profiling
+
+**Advanced PDF Editing**
+- Page reordering, deletion, and insertion before PDF finalization
+- Why deferred: Requires PDF rewriting logic; users can re-scan if pages are blurry
+- Impact: Professional workflows; assess demand via Phase 1 analytics before investing
+
+**PKCS#7 Digital Signing**
+- Full certificate-chain signing (vs. visual signatures)
+- Why deferred: Complex Apache PDFBox integration; visual signing covers 99% of Play Store use cases
+- Impact: If analytics show demand, Phase 2.2 can implement with proper CMS/TSA integration
+
+**Enhanced Signature Management**
+- Batch delete signatures, organize into categories, search/filter
+- Why deferred: Phase 1 users typically create 3–5 signatures; bulk operations low-priority
+- Impact: Improved UX for power users; revisit after 1M+ signatures in the wild
+
+---
+
 ## Success Criteria
 
 **Phase 1 (Week 11)**
