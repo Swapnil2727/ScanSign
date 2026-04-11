@@ -12,3 +12,5 @@ import kotlinx.serialization.Serializable
 @Serializable data object ScanConfirmRoute
 @Serializable data object GalleryImportRoute
 @Serializable data class DocumentDetailRoute(val documentId: String)
+@Serializable data class DocumentSigningRoute(val documentId: String)
+@Serializable data class DocumentViewerRoute(val documentId: String, val initialPage: Int = 0)

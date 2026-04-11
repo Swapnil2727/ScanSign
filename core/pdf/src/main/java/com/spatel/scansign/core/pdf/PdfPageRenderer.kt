@@ -9,9 +9,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
 
-class PdfPageRenderer {
+open class PdfPageRenderer {
 
-    suspend fun renderPage(pdfFile: File, pageIndex: Int, widthPx: Int): Result<Bitmap> =
+    open suspend fun renderPage(pdfFile: File, pageIndex: Int, widthPx: Int): Result<Bitmap> =
         withContext(Dispatchers.IO) {
             runCatching {
                 val pfd = ParcelFileDescriptor.open(pdfFile, ParcelFileDescriptor.MODE_READ_ONLY)
@@ -24,6 +24,25 @@ class PdfPageRenderer {
                         Canvas(bitmap).drawColor(Color.WHITE)
                         page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
                         bitmap
+                    } finally {
+                        page.close()
+                    }
+                } finally {
+                    renderer.close()
+                    pfd.close()
+                }
+            }
+        }
+
+    open suspend fun getPageSizePt(pdfFile: File, pageIndex: Int): Result<Pair<Int, Int>> =
+        withContext(Dispatchers.IO) {
+            runCatching {
+                val pfd = ParcelFileDescriptor.open(pdfFile, ParcelFileDescriptor.MODE_READ_ONLY)
+                val renderer = PdfRenderer(pfd)
+                try {
+                    val page = renderer.openPage(pageIndex)
+                    try {
+                        Pair(page.width, page.height)
                     } finally {
                         page.close()
                     }

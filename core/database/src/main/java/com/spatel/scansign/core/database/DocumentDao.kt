@@ -32,4 +32,7 @@ interface DocumentDao {
 
     @Query("UPDATE documents SET title = :title, updated_at = :updatedAt WHERE id = :id")
     suspend fun updateTitle(id: String, title: String, updatedAt: Long)
+
+    @Query("UPDATE documents SET status = :status, updated_at = :updatedAt WHERE id = :id")
+    suspend fun updateStatus(id: String, status: String, updatedAt: Long)
 }

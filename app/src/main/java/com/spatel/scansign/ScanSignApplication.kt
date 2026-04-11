@@ -7,6 +7,7 @@ import com.spatel.scansign.core.di.datastoreModule
 import com.spatel.scansign.di.documentsModule
 import com.spatel.scansign.di.scannerModule
 import com.spatel.scansign.di.settingsModule
+import com.spatel.scansign.di.signerModule
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
 import org.koin.core.context.startKoin
@@ -18,7 +19,7 @@ class ScanSignApplication : Application() {
         startKoin {
             androidLogger()
             androidContext(this@ScanSignApplication)
-            modules(appModule, databaseModule, datastoreModule, scannerModule, documentsModule, settingsModule)
+            modules(appModule, databaseModule, datastoreModule, scannerModule, documentsModule, settingsModule, signerModule)
         }
     }
 }
