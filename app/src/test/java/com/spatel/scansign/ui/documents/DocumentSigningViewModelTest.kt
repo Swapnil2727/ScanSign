@@ -18,8 +18,6 @@ import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkStatic
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -88,22 +86,14 @@ class DocumentSigningViewModelTest {
         context             = mockContext,
     )
 
-    // Helper to activate WhileSubscribed StateFlow in tests
-    private fun kotlinx.coroutines.test.TestScope.activateFlows(vm: DocumentSigningViewModel) {
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
-            vm.signatures.collect {}
-        }
-    }
-
     // ── Initial state ─────────────────────────────────────────────────────────
 
     @Test
     fun `initial state has no selected signature and signingState is Idle`() = runTest {
         val vm = createViewModel()
-        activateFlows(vm)
 
-        assertNull(vm.selectedSignature.value)
-        assertTrue(vm.signingState.value is SigningState.Idle)
+        assertNull(vm.uiState.value.selectedSignature)
+        assertTrue(vm.uiState.value.signingState is SigningState.Idle)
     }
 
     // ── selectSignature ───────────────────────────────────────────────────────
@@ -111,13 +101,12 @@ class DocumentSigningViewModelTest {
     @Test
     fun `selectSignature sets selected signature and centres offset on page`() = runTest {
         val vm = createViewModel()
-        activateFlows(vm)
         advanceUntilIdle()  // allow init coroutine to complete and bitmap to load
 
         val sig = Signature("s1", "My Sig", 0L, SignatureType.DRAWN, bitmapPath = null)
         vm.selectSignature(sig)
 
-        assertEquals(sig, vm.selectedSignature.value)
+        assertEquals(sig, vm.uiState.value.selectedSignature)
         // bmp 1080×1400; sigW = 1080*0.25 = 270; sigH = 270/3 = 90
         // centreX = (1080 - 270) / 2 = 405; centreY = (1400 - 90) / 2 = 655
         val offset = vm.signatureOffset.value
@@ -130,7 +119,6 @@ class DocumentSigningViewModelTest {
     @Test
     fun `dragSignature updates offset by delta`() = runTest {
         val vm = createViewModel()
-        activateFlows(vm)
         advanceUntilIdle()
 
         val sig = Signature("s1", "My Sig", 0L, SignatureType.DRAWN)
@@ -148,7 +136,6 @@ class DocumentSigningViewModelTest {
     @Test
     fun `dragSignature clamps offset so signature stays within bitmap bounds`() = runTest {
         val vm = createViewModel()
-        activateFlows(vm)
         advanceUntilIdle()
 
         val sig = Signature("s1", "My Sig", 0L, SignatureType.DRAWN)
@@ -169,35 +156,33 @@ class DocumentSigningViewModelTest {
     @Test
     fun `nextPage increments pageIndex and is clamped at pageCount minus 1`() = runTest {
         val vm = createViewModel()
-        activateFlows(vm)
         advanceUntilIdle()  // init sets pageCount = 3
 
-        assertEquals(0, vm.pageIndex.value)
+        assertEquals(0, vm.uiState.value.pageIndex)
 
         vm.nextPage(); advanceUntilIdle()
-        assertEquals(1, vm.pageIndex.value)
+        assertEquals(1, vm.uiState.value.pageIndex)
 
         vm.nextPage(); advanceUntilIdle()
-        assertEquals(2, vm.pageIndex.value)
+        assertEquals(2, vm.uiState.value.pageIndex)
 
         vm.nextPage(); advanceUntilIdle()  // already at last page
-        assertEquals(2, vm.pageIndex.value)
+        assertEquals(2, vm.uiState.value.pageIndex)
     }
 
     @Test
     fun `prevPage decrements pageIndex and is clamped at 0`() = runTest {
         val vm = createViewModel()
-        activateFlows(vm)
         advanceUntilIdle()
 
         vm.nextPage(); advanceUntilIdle()
-        assertEquals(1, vm.pageIndex.value)
+        assertEquals(1, vm.uiState.value.pageIndex)
 
         vm.prevPage(); advanceUntilIdle()
-        assertEquals(0, vm.pageIndex.value)
+        assertEquals(0, vm.uiState.value.pageIndex)
 
         vm.prevPage(); advanceUntilIdle()  // already at first page
-        assertEquals(0, vm.pageIndex.value)
+        assertEquals(0, vm.uiState.value.pageIndex)
     }
 
     // ── confirm ───────────────────────────────────────────────────────────────
@@ -205,13 +190,12 @@ class DocumentSigningViewModelTest {
     @Test
     fun `confirm with no selected signature is a no-op`() = runTest {
         val vm = createViewModel()
-        activateFlows(vm)
         advanceUntilIdle()
 
         vm.confirm()
         advanceUntilIdle()
 
-        assertTrue(vm.signingState.value is SigningState.Idle)
+        assertTrue(vm.uiState.value.signingState is SigningState.Idle)
         assertNull(fakeDocumentRepo.lastSignedId)
     }
 
@@ -222,15 +206,14 @@ class DocumentSigningViewModelTest {
 
         try {
             val vm = createViewModel()
-            activateFlows(vm)
-            advanceUntilIdle()
+                advanceUntilIdle()
 
             val sig = Signature("s1", "My Sig", 0L, SignatureType.DRAWN, bitmapPath = "/fake/path.png")
             vm.selectSignature(sig)
             vm.confirm()
             advanceUntilIdle()
 
-            assertTrue(vm.signingState.value is SigningState.Success)
+            assertTrue(vm.uiState.value.signingState is SigningState.Success)
         } finally {
             unmockkStatic(BitmapFactory::class)
         }
@@ -244,15 +227,14 @@ class DocumentSigningViewModelTest {
 
         try {
             val vm = createViewModel()
-            activateFlows(vm)
-            advanceUntilIdle()
+                advanceUntilIdle()
 
             val sig = Signature("s1", "My Sig", 0L, SignatureType.DRAWN, bitmapPath = "/fake/path.png")
             vm.selectSignature(sig)
             vm.confirm()
             advanceUntilIdle()
 
-            val state = vm.signingState.value
+            val state = vm.uiState.value.signingState
             assertTrue(state is SigningState.Error)
             assertEquals("PDF write error", (state as SigningState.Error).message)
         } finally {
@@ -308,18 +290,17 @@ class DocumentSigningViewModelTest {
 
         try {
             val vm = createViewModel()
-            activateFlows(vm)
-            advanceUntilIdle()
+                advanceUntilIdle()
 
             val sig = Signature("s1", "My Sig", 0L, SignatureType.DRAWN, bitmapPath = "/fake/path.png")
             vm.selectSignature(sig)
             vm.confirm()
             advanceUntilIdle()
 
-            assertFalse(vm.signingState.value is SigningState.Idle)
+            assertFalse(vm.uiState.value.signingState is SigningState.Idle)
 
             vm.clearSigningState()
-            assertTrue(vm.signingState.value is SigningState.Idle)
+            assertTrue(vm.uiState.value.signingState is SigningState.Idle)
         } finally {
             unmockkStatic(BitmapFactory::class)
         }

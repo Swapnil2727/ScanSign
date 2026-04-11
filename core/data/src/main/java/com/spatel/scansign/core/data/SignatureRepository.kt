@@ -6,6 +6,7 @@ import com.spatel.scansign.core.model.Signature
 import com.spatel.scansign.core.model.SignatureType
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import java.io.File
 
 interface SignatureRepository {
 
@@ -30,7 +31,18 @@ internal class SignatureRepositoryImpl(private val dao: SignatureDao) : Signatur
     override fun getAll(): Flow<List<Signature>> =
         dao.getAll().map { entities -> entities.map { it.toDomain() } }
 
-    override suspend fun delete(id: String) = dao.delete(id)
+    override suspend fun delete(id: String) {
+        // Delete associated bitmap file first (if exists)
+        runCatching {
+            dao.getById(id)?.let { entity ->
+                entity.bitmapPath?.let { path ->
+                    File(path).delete()
+                }
+            }
+        }
+        // Then delete database entry
+        dao.delete(id)
+    }
 }
 
 private fun Signature.toEntity() = SignatureEntity(

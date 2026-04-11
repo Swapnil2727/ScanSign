@@ -9,56 +9,62 @@ import com.spatel.scansign.core.pdf.ImagesToPdfConverter
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+
+data class ScannerUiState(
+    val scanResult: ScanResult? = null,
+    val saveState: SaveState = SaveState.Idle,
+)
 
 class ScannerViewModel(
     private val saveDocument: SaveScannedDocumentUseCase,
     private val imagesToPdfConverter: ImagesToPdfConverter,
 ) : ViewModel() {
 
-    private val _scanResult = MutableStateFlow<ScanResult?>(null)
-    val scanResult: StateFlow<ScanResult?> = _scanResult.asStateFlow()
-
-    private val _saveState = MutableStateFlow<SaveState>(SaveState.Idle)
-    val saveState: StateFlow<SaveState> = _saveState.asStateFlow()
+    private val _uiState = MutableStateFlow(ScannerUiState())
+    val uiState: StateFlow<ScannerUiState> = _uiState.asStateFlow()
 
     fun onScanSuccess(pdfUri: Uri, pageUris: List<Uri>) {
-        _scanResult.value = ScanResult(pdfUri = pdfUri, pageUris = pageUris)
+        _uiState.update { it.copy(scanResult = ScanResult(pdfUri = pdfUri, pageUris = pageUris)) }
     }
 
     fun save(title: String) {
-        val result = _scanResult.value ?: return
+        val result = _uiState.value.scanResult ?: return
         viewModelScope.launch {
-            _saveState.value = SaveState.Saving
+            _uiState.update { it.copy(saveState = SaveState.Saving) }
             val outcome = saveDocument(result.resolvedPdfUri(), result.pageUris, title)
-            _saveState.value = outcome.fold(
-                onSuccess = { SaveState.Success(it) },
-                onFailure = { SaveState.Error(it.message ?: "Save failed") },
-            )
+            _uiState.update {
+                it.copy(
+                    saveState = outcome.fold(
+                        onSuccess = { doc -> SaveState.Success(doc) },
+                        onFailure = { err -> SaveState.Error(err.message ?: "Save failed") },
+                    ),
+                )
+            }
         }
     }
 
     fun onGalleryImagesSelected(imageUris: List<Uri>) {
-        _scanResult.value = null
-        _saveState.value = SaveState.Idle
+        _uiState.update { it.copy(scanResult = null, saveState = SaveState.Idle) }
         viewModelScope.launch {
             imagesToPdfConverter.convert(imageUris).fold(
                 onSuccess = { pdfFile ->
-                    _scanResult.value = ScanResult(
-                        pdfFile = pdfFile,
-                        pageUris = imageUris,
-                    )
+                    _uiState.update {
+                        it.copy(scanResult = ScanResult(pdfFile = pdfFile, pageUris = imageUris))
+                    }
                 },
-                onFailure = {
-                    _saveState.value = SaveState.Error(it.message ?: "Import failed")
+                onFailure = { err ->
+                    _uiState.update {
+                        it.copy(saveState = SaveState.Error(err.message ?: "Import failed"))
+                    }
                 },
             )
         }
     }
 
     fun clearScanResult() {
-        _scanResult.value = null
-        _saveState.value = SaveState.Idle
+        _uiState.update { it.copy(scanResult = null, saveState = SaveState.Idle) }
     }
 }
 

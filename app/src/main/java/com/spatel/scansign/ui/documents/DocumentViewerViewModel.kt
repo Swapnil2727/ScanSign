@@ -31,7 +31,7 @@ class DocumentViewerViewModel(
         if (document != null) {
             DocumentViewerUiState.Success(
                 documentTitle = document.title,
-                pages         = pages,
+                pages = pages,
             )
         } else {
             DocumentViewerUiState.Loading
@@ -39,8 +39,8 @@ class DocumentViewerViewModel(
     }
         .catch { emit(DocumentViewerUiState.Loading) }
         .stateIn(
-            scope        = viewModelScope,
-            started      = SharingStarted.WhileSubscribed(5_000),
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
             initialValue = DocumentViewerUiState.Loading,
         )
 }

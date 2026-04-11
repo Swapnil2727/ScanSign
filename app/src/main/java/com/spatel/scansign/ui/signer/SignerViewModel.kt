@@ -14,10 +14,8 @@ import com.spatel.scansign.core.data.SignatureRepository
 import com.spatel.scansign.core.model.Signature
 import com.spatel.scansign.core.model.SignatureType
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.io.File
@@ -32,26 +30,25 @@ sealed interface SignerSaveState {
     data class Error(val message: String) : SignerSaveState
 }
 
+data class SignerUiState(
+    val selectedTab: SignerTab = SignerTab.DRAW,
+    val savedSignatures: List<Signature> = emptyList(),
+    val transparentBackground: Boolean = false,
+    val selectedImageUri: Uri? = null,
+    val saveState: SignerSaveState = SignerSaveState.Idle,
+)
+
 class SignerViewModel(
     private val signatureRepository: SignatureRepository,
     private val context: Context,
 ) : ViewModel() {
 
-    // ── Tab ──────────────────────────────────────────────────────────────────
+    // ── Unified state (low-frequency: tab, repo data, settings, async ops) ────
 
-    private val _selectedTab = MutableStateFlow(SignerTab.DRAW)
-    val selectedTab: StateFlow<SignerTab> = _selectedTab.asStateFlow()
+    private val _uiState = MutableStateFlow(SignerUiState())
+    val uiState: StateFlow<SignerUiState> = _uiState.asStateFlow()
 
-    fun selectTab(tab: SignerTab) {
-        _selectedTab.value = tab
-    }
-
-    // ── Saved signatures (live from DB) ───────────────────────────────────────
-
-    val savedSignatures: StateFlow<List<Signature>> = signatureRepository.getAll()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
-
-    // ── Draw tab ─────────────────────────────────────────────────────────────
+    // ── High-frequency drawing state (updated on every pointer event) ─────────
 
     private val _completedStrokes = MutableStateFlow<List<List<Offset>>>(emptyList())
     val completedStrokes: StateFlow<List<List<Offset>>> = _completedStrokes.asStateFlow()
@@ -60,6 +57,23 @@ class SignerViewModel(
     val currentStroke: StateFlow<List<Offset>> = _currentStroke.asStateFlow()
 
     val hasDrawing: Boolean get() = _completedStrokes.value.isNotEmpty()
+
+    init {
+        // Collect saved signatures for the lifetime of the ViewModel
+        viewModelScope.launch {
+            signatureRepository.getAll().collect { sigs ->
+                _uiState.update { it.copy(savedSignatures = sigs) }
+            }
+        }
+    }
+
+    // ── Tab ───────────────────────────────────────────────────────────────────
+
+    fun selectTab(tab: SignerTab) {
+        _uiState.update { it.copy(selectedTab = tab) }
+    }
+
+    // ── Draw tab ──────────────────────────────────────────────────────────────
 
     fun startStroke(offset: Offset) {
         _currentStroke.value = listOf(offset)
@@ -86,31 +100,20 @@ class SignerViewModel(
         _currentStroke.value = emptyList()
     }
 
-    // ── Background option (Draw tab) ──────────────────────────────────────────
-
-    private val _transparentBackground = MutableStateFlow(false)
-    val transparentBackground: StateFlow<Boolean> = _transparentBackground.asStateFlow()
-
     fun setTransparentBackground(value: Boolean) {
-        _transparentBackground.value = value
+        _uiState.update { it.copy(transparentBackground = value) }
     }
 
     // ── Image tab ─────────────────────────────────────────────────────────────
 
-    private val _selectedImageUri = MutableStateFlow<Uri?>(null)
-    val selectedImageUri: StateFlow<Uri?> = _selectedImageUri.asStateFlow()
-
     fun onImageSelected(uri: Uri) {
-        _selectedImageUri.value = uri
+        _uiState.update { it.copy(selectedImageUri = uri) }
     }
 
     // ── Save state ────────────────────────────────────────────────────────────
 
-    private val _saveState = MutableStateFlow<SignerSaveState>(SignerSaveState.Idle)
-    val saveState: StateFlow<SignerSaveState> = _saveState.asStateFlow()
-
     fun clearSaveState() {
-        _saveState.value = SignerSaveState.Idle
+        _uiState.update { it.copy(saveState = SignerSaveState.Idle) }
     }
 
     // ── Save drawn signature ──────────────────────────────────────────────────
@@ -118,7 +121,7 @@ class SignerViewModel(
     fun saveDrawnSignature(name: String, canvasWidthPx: Int, canvasHeightPx: Int, transparentBackground: Boolean = false) {
         if (name.isBlank() || _completedStrokes.value.isEmpty()) return
         viewModelScope.launch {
-            _saveState.value = SignerSaveState.Saving
+            _uiState.update { it.copy(saveState = SignerSaveState.Saving) }
             runCatching {
                 val bitmap = renderStrokesToBitmap(
                     strokes = _completedStrokes.value,
@@ -138,8 +141,8 @@ class SignerViewModel(
                 clearDrawing()
                 signature
             }.fold(
-                onSuccess = { _saveState.value = SignerSaveState.Success(it) },
-                onFailure = { _saveState.value = SignerSaveState.Error(it.message ?: "Save failed") },
+                onSuccess = { sig -> _uiState.update { it.copy(saveState = SignerSaveState.Success(sig)) } },
+                onFailure = { err -> _uiState.update { it.copy(saveState = SignerSaveState.Error(err.message ?: "Save failed")) } },
             )
         }
     }
@@ -147,10 +150,10 @@ class SignerViewModel(
     // ── Save image signature ──────────────────────────────────────────────────
 
     fun saveImageSignature(name: String) {
-        val uri = _selectedImageUri.value ?: return
+        val uri = _uiState.value.selectedImageUri ?: return
         if (name.isBlank()) return
         viewModelScope.launch {
-            _saveState.value = SignerSaveState.Saving
+            _uiState.update { it.copy(saveState = SignerSaveState.Saving) }
             runCatching {
                 val destFile = newSignatureFile()
                 context.contentResolver.openInputStream(uri)!!.use { input ->
@@ -164,11 +167,11 @@ class SignerViewModel(
                     createdAt = System.currentTimeMillis(),
                 )
                 signatureRepository.save(signature).getOrThrow()
-                _selectedImageUri.value = null
+                _uiState.update { it.copy(selectedImageUri = null) }
                 signature
             }.fold(
-                onSuccess = { _saveState.value = SignerSaveState.Success(it) },
-                onFailure = { _saveState.value = SignerSaveState.Error(it.message ?: "Save failed") },
+                onSuccess = { sig -> _uiState.update { it.copy(saveState = SignerSaveState.Success(sig)) } },
+                onFailure = { err -> _uiState.update { it.copy(saveState = SignerSaveState.Error(err.message ?: "Save failed")) } },
             )
         }
     }

@@ -15,12 +15,11 @@ import com.spatel.scansign.core.pdf.PdfPageRenderer
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.io.File
 
@@ -30,6 +29,15 @@ sealed interface SigningState {
     data object Success : SigningState
     data class  Error(val message: String) : SigningState
 }
+
+data class SigningUiState(
+    val pageIndex: Int = 0,
+    val pageCount: Int = 1,
+    val pageBitmap: Bitmap? = null,
+    val signatures: List<Signature> = emptyList(),
+    val selectedSignature: Signature? = null,
+    val signingState: SigningState = SigningState.Idle,
+)
 
 class DocumentSigningViewModel(
     private val documentId: String,
@@ -44,31 +52,12 @@ class DocumentSigningViewModel(
         const val RENDER_WIDTH_PX = 1080
     }
 
-    // ── Saved signatures (live from DB) ───────────────────────────────────────
+    // ── Unified state (low-frequency: page metadata, signatures, op status) ───
 
-    val signatures: StateFlow<List<Signature>> = signatureRepository.getAll()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+    private val _uiState = MutableStateFlow(SigningUiState())
+    val uiState: StateFlow<SigningUiState> = _uiState.asStateFlow()
 
-    // ── Selected signature ────────────────────────────────────────────────────
-
-    private val _selectedSignature = MutableStateFlow<Signature?>(null)
-    val selectedSignature: StateFlow<Signature?> = _selectedSignature.asStateFlow()
-
-    // ── Page state ────────────────────────────────────────────────────────────
-
-    private val _pageIndex = MutableStateFlow(0)
-    val pageIndex: StateFlow<Int> = _pageIndex.asStateFlow()
-
-    private val _pageCount = MutableStateFlow(1)
-    val pageCount: StateFlow<Int> = _pageCount.asStateFlow()
-
-    private val _pageBitmap = MutableStateFlow<Bitmap?>(null)
-    val pageBitmap: StateFlow<Bitmap?> = _pageBitmap.asStateFlow()
-
-    private val _pageSizePt = MutableStateFlow<Pair<Int, Int>?>(null)
-    val pageSizePt: StateFlow<Pair<Int, Int>?> = _pageSizePt.asStateFlow()
-
-    // ── Drag state (bitmap-pixel space) ───────────────────────────────────────
+    // ── High-frequency gesture state (updated 60fps during drag / resize) ─────
 
     private val _signatureOffset = MutableStateFlow(Offset.Zero)
     val signatureOffset: StateFlow<Offset> = _signatureOffset.asStateFlow()
@@ -76,19 +65,25 @@ class DocumentSigningViewModel(
     private val _signatureSize = MutableStateFlow(Size.Zero)
     val signatureSize: StateFlow<Size> = _signatureSize.asStateFlow()
 
-    // ── Signing operation state ───────────────────────────────────────────────
+    // ── Internal-only: PDF point dimensions needed for coordinate conversion ──
 
-    private val _signingState = MutableStateFlow<SigningState>(SigningState.Idle)
-    val signingState: StateFlow<SigningState> = _signingState.asStateFlow()
+    private val _pageSizePt = MutableStateFlow<Pair<Int, Int>?>(null)
 
     // ── Init ──────────────────────────────────────────────────────────────────
 
     init {
+        // Live signature list
+        viewModelScope.launch {
+            signatureRepository.getAll().collect { sigs ->
+                _uiState.update { it.copy(signatures = sigs) }
+            }
+        }
+        // Page count + first page render
         viewModelScope.launch {
             documentRepository.getById(documentId)
                 .filterNotNull()
                 .first()
-                .let { _pageCount.value = it.pageCount.coerceAtLeast(1) }
+                .let { doc -> _uiState.update { it.copy(pageCount = doc.pageCount.coerceAtLeast(1)) } }
             loadPage()
         }
     }
@@ -96,15 +91,15 @@ class DocumentSigningViewModel(
     // ── Page loading ──────────────────────────────────────────────────────────
 
     private fun loadPage() {
-        val idx = _pageIndex.value
+        val idx = _uiState.value.pageIndex
         viewModelScope.launch {
             val doc = documentRepository.getById(documentId).filterNotNull().first()
             val pdfFile = File(doc.pdfPath ?: return@launch)
             coroutineScope {
                 val bmp  = async { pdfPageRenderer.renderPage(pdfFile, idx, RENDER_WIDTH_PX) }
                 val size = async { pdfPageRenderer.getPageSizePt(pdfFile, idx) }
-                bmp.await().onSuccess  { _pageBitmap.value = it }
-                size.await().onSuccess { _pageSizePt.value = it }
+                bmp.await().onSuccess  { bitmap -> _uiState.update { it.copy(pageBitmap = bitmap) } }
+                size.await().onSuccess { sizePt  -> _pageSizePt.value = sizePt }
             }
         }
     }
@@ -112,15 +107,17 @@ class DocumentSigningViewModel(
     // ── Page navigation ───────────────────────────────────────────────────────
 
     fun nextPage() {
-        if (_pageIndex.value < _pageCount.value - 1) {
-            _pageIndex.value++
+        val state = _uiState.value
+        if (state.pageIndex < state.pageCount - 1) {
+            _uiState.update { it.copy(pageIndex = it.pageIndex + 1) }
             loadPage()
         }
     }
 
     fun prevPage() {
-        if (_pageIndex.value > 0) {
-            _pageIndex.value--
+        val state = _uiState.value
+        if (state.pageIndex > 0) {
+            _uiState.update { it.copy(pageIndex = it.pageIndex - 1) }
             loadPage()
         }
     }
@@ -128,8 +125,8 @@ class DocumentSigningViewModel(
     // ── Signature selection ───────────────────────────────────────────────────
 
     fun selectSignature(sig: Signature) {
-        _selectedSignature.value = sig
-        val bmp = _pageBitmap.value ?: return
+        _uiState.update { it.copy(selectedSignature = sig) }
+        val bmp = _uiState.value.pageBitmap ?: return
         val w = bmp.width * 0.25f
         val h = w / 3f
         _signatureSize.value   = Size(w, h)
@@ -142,7 +139,7 @@ class DocumentSigningViewModel(
     // ── Drag ──────────────────────────────────────────────────────────────────
 
     fun dragSignature(delta: Offset) {
-        val bmp  = _pageBitmap.value ?: return
+        val bmp  = _uiState.value.pageBitmap ?: return
         val size = _signatureSize.value
         val cur  = _signatureOffset.value
         _signatureOffset.value = Offset(
@@ -154,7 +151,7 @@ class DocumentSigningViewModel(
     // ── Resize ────────────────────────────────────────────────────────────────
 
     fun resizeSignature(delta: Offset) {
-        val bmp = _pageBitmap.value ?: return
+        val bmp = _uiState.value.pageBitmap ?: return
         val cur = _signatureSize.value
         val off = _signatureOffset.value
         val minPx = bmp.width * 0.05f          // 5 % of page width minimum
@@ -167,14 +164,15 @@ class DocumentSigningViewModel(
     // ── Confirm / sign ────────────────────────────────────────────────────────
 
     fun confirm() {
-        val sig    = _selectedSignature.value ?: return
-        val bmp    = _pageBitmap.value        ?: return
-        val sizePt = _pageSizePt.value        ?: return
+        val state  = _uiState.value
+        val sig    = state.selectedSignature ?: return
+        val bmp    = state.pageBitmap        ?: return
+        val sizePt = _pageSizePt.value       ?: return
         val offset = _signatureOffset.value
         val sigSz  = _signatureSize.value
 
         viewModelScope.launch {
-            _signingState.value = SigningState.Signing
+            _uiState.update { it.copy(signingState = SigningState.Signing) }
             runCatching {
                 val sigBitmap: Bitmap =
                     BitmapFactory.decodeFile(sig.bitmapPath ?: error("Signature '${sig.name}' has no bitmap path"))
@@ -188,20 +186,20 @@ class DocumentSigningViewModel(
                 signDocumentUseCase(
                     documentId      = documentId,
                     signatureBitmap = sigBitmap,
-                    pageIndex       = _pageIndex.value,
-                    x               = offset.x      * scaleX,
+                    pageIndex       = state.pageIndex,
+                    x               = offset.x     * scaleX,
                     y               = pdfY,
-                    width           = sigSz.width   * scaleX,
-                    height          = sigSz.height  * scaleY,
+                    width           = sigSz.width  * scaleX,
+                    height          = sigSz.height * scaleY,
                 ).getOrThrow()
             }.fold(
-                onSuccess = { _signingState.value = SigningState.Success },
-                onFailure = { _signingState.value = SigningState.Error(it.message ?: "Signing failed") },
+                onSuccess = { _uiState.update { it.copy(signingState = SigningState.Success) } },
+                onFailure = { err -> _uiState.update { it.copy(signingState = SigningState.Error(err.message ?: "Signing failed")) } },
             )
         }
     }
 
     fun clearSigningState() {
-        _signingState.value = SigningState.Idle
+        _uiState.update { it.copy(signingState = SigningState.Idle) }
     }
 }
