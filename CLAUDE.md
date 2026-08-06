@@ -167,6 +167,12 @@ Feature-based modules with layer separation:
 > hook is in `PdfCopier` (`:core:pdf`) — re-encode page images at different JPEG
 > quality when writing the final PDF (e.g. 72% Standard, 95% High). Deferred to
 > Week 7 polish or a dedicated small PR before release.
+>
+> **Scoped fix (Task 1 of `docs/superpowers/plans/2026-08-06-release-readiness.md`):**
+> the setting can only ever affect the gallery-import path (`ImagesToPdfConverter`,
+> where we control JPEG encoding). ML Kit's camera-scan path returns a finished PDF
+> with no public quality knob — `PdfCopier.copy()` is a raw byte copy. Re-encoding
+> ML Kit's own PDF output after the fact is real, separate work, not part of this fix.
 
 ---
 
@@ -182,26 +188,28 @@ Feature-based modules with layer separation:
 - `PdfCopier` extended to handle `file://` URIs (used for gallery-generated PDFs)
 - `app/build.gradle.kts`: added `projects.core.pdf` dependency
 
-**7.1 Polish (PR 7.B)**
+**7.1 Polish (PR 7.B)** ✅
 - Edge-to-edge on all screens
-- Empty states: no documents yet, first-time user onboarding
-- Error states: ML Kit unavailable, storage full, permission denied
+- Empty states: no documents yet, first-time user onboarding — shipped as a full onboarding flow (`OnboardingScreen`/`OnboardingViewModel`), not just an empty-state card
+- Error states: ML Kit unavailable, storage full, permission denied — scanner/gallery-import errors surfaced (`Week 7.B` commit)
 - Loading indicators and screen transitions
 
 **7.2 Unit Tests**
 - All Phase 1 use cases with fake repositories (no mocks)
 - `PdfCopier`, `PdfMetadata`, `PdfPageRenderer`
 - Target: 100% domain layer coverage
+- **Not yet done.** `:core:pdf` has no `src/test` directory as of Aug 2026 — `PdfCopier`, `PdfMetadata`, `PdfPageRenderer`, and `ImagesToPdfConverter` are all untested. Tracked as Task 1 in `docs/superpowers/plans/2026-08-06-release-readiness.md`.
 
 **7.3 ViewModel + Integration Tests**
-- `ScannerViewModel`, `DocumentsViewModel` with fake use cases
-- Integration test: scan result → save → list → delete with in-memory Room
-- Navigation flow tests
+- `ScannerViewModel`, `DocumentsViewModel` with fake use cases ✅ — `ScannerViewModelTest`, `DocumentsViewModelTest` present, plus `DocumentDetailViewModelTest`, `DocumentSigningViewModelTest`, `SettingsViewModelTest`, `SignerViewModelTest` beyond original scope
+- Integration test: scan result → save → list → delete with in-memory Room — **unverified**, no dedicated integration test file found
+- Navigation flow tests — **unverified**, none found
 
 **7.4 Performance**
 - Cold start target: < 2 seconds
 - Room indices on `createdAt`, `title`
 - Thumbnail lazy-loading in document list
+- **Unverified** — no baseline profile or measured cold-start numbers in the repo as of Aug 2026.
 
 ---
 
@@ -218,7 +226,7 @@ Feature-based modules with layer separation:
 
 ---
 
-### Week 9: Signing Feature UI
+### Week 9: Signing Feature UI ✅
 
 **9.1 Signing Screen** ✅
 - Replace placeholder `SignerScreen`
@@ -226,11 +234,11 @@ Feature-based modules with layer separation:
 - **Draw**: Bézier-smoothed canvas with `detectDragGestures`, undo, clear, save as bitmap
 - **Image**: `PickVisualMedia` launcher, preview, save
 
-**9.2 PDF Signing Flow**
+**9.2 PDF Signing Flow** ✅
 - Entry point: document detail → "Sign" action
-- Signature placement overlay on PDF page preview (drag, scale, reposition)
+- Signature placement overlay on PDF page preview (drag, scale, reposition) — `DocumentSigningScreen`/`DocumentSigningViewModel`
 - Confirm → `SignDocumentUseCase` → document status → `SIGNED`
-- Restore Sign tab to bottom nav (hidden in Phase 1 polish, real in Week 9)
+- Restore Sign tab to bottom nav (hidden in Phase 1 polish, real in Week 9) — 4-tab bar (Docs · Scan · Sign · Settings) confirmed live in `RELEASE_CHECKLIST.md` §1.1
 
 ---
 
@@ -239,15 +247,18 @@ Feature-based modules with layer separation:
 **10.1 Signing Tests**
 - Unit test `SignDocumentUseCase` with fakes ✅ (done in Week 8)
 - `SignerViewModel` unit tests ✅ (done in Week 9)
-- PDFBox signing round-trip test (sign → open → assert bitmap embedded)
+- PDFBox signing round-trip test (sign → open → assert bitmap embedded) — **not yet done**, no `:core:pdf` tests exist yet (see 7.2)
 
 **10.2 Full App Regression**
 - End-to-end: scan → list → sign → verify → share
 - Navigation regression across all routes
+- **Not yet done.** `RELEASE_CHECKLIST.md` Part 1 is the manual QA plan for this, but none of its checkboxes are ticked as of Aug 2026.
 
 ---
 
 ### Week 11: Phase 1 Release (Scanner + Signing)
+
+**Current focus.** Tracked task-by-task in `RELEASE_CHECKLIST.md` (manual QA plan + pre-build/keystore/Play Console steps) and `docs/superpowers/plans/2026-08-06-release-readiness.md` (ordered execution plan covering the `ScanQuality` fix, splash screen, crash-reporting decision, R8, and signing).
 
 **11.1 Play Store Preparation**
 - Generate signed AAB with release keystore
@@ -342,4 +353,4 @@ Feature-based modules with layer separation:
 ---
 
 **Version**: 7.0
-**Status**: Week 9.1 Complete (Signer Screen — Draw + Image tabs), Week 9.2 In Progress (PDF signing flow)
+**Status**: Weeks 1–9 shipped — scanning (camera + gallery import), documents (list/detail/viewer, search, swipe-to-delete), settings, onboarding, and draw/image signing with a drag-to-place overlay are all merged to `main`. Open gaps before Week 11 release: `:core:pdf` unit tests (7.2), PDFBox signing round-trip test (10.1), and a full manual regression pass (10.2, `RELEASE_CHECKLIST.md` Part 1). Week 11 (Play Store release) is the current focus — see `RELEASE_CHECKLIST.md` and `docs/superpowers/plans/2026-08-06-release-readiness.md`.
