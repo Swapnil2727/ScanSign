@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "com.spatel.scansign.core.model"
+    namespace = "com.scansign.app.core.model"
     compileSdk {
         version = release(36)
     }

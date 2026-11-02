@@ -1,0 +1,19 @@
+package com.scansign.app.navigation
+
+import kotlinx.serialization.Serializable
+
+// Onboarding destination (shown only on first launch)
+@Serializable data object OnboardingRoute
+
+// Top-level bottom-nav destinations
+@Serializable data object DocumentsRoute
+@Serializable data object ScannerRoute
+@Serializable data object SignerRoute
+@Serializable data object SettingsRoute
+
+// Detail destinations pushed on top of a root
+@Serializable data object ScanConfirmRoute
+@Serializable data object GalleryImportRoute
+@Serializable data class DocumentDetailRoute(val documentId: String)
+@Serializable data class DocumentSigningRoute(val documentId: String)
+@Serializable data class DocumentViewerRoute(val documentId: String, val initialPage: Int = 0)

@@ -1,0 +1,62 @@
+package com.scansign.app.util
+
+import android.net.Uri
+import com.scansign.app.core.data.DocumentRepository
+import com.scansign.app.core.model.Document
+import com.scansign.app.core.model.DocumentPage
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.update
+
+/**
+ * In-memory fake for [DocumentRepository]. Used in ViewModel unit tests — no mocks needed.
+ */
+class FakeDocumentRepository : DocumentRepository {
+
+    private val _docs = MutableStateFlow<List<Document>>(emptyList())
+
+    // Test-readable records of mutations
+    var lastRenamedId: String? = null
+    var lastRenamedTitle: String? = null
+    var lastDeletedId: String? = null
+    var lastSignedId: String? = null
+
+    fun setDocuments(docs: List<Document>) {
+        _docs.value = docs
+    }
+
+    override fun getAll(): Flow<List<Document>> = _docs
+
+    override fun getById(id: String): Flow<Document?> =
+        _docs.map { docs -> docs.find { it.id == id } }
+
+    override suspend fun getPages(documentId: String): List<DocumentPage> = emptyList()
+
+    override suspend fun rename(id: String, title: String) {
+        lastRenamedId = id
+        lastRenamedTitle = title
+        // Update in-memory list so reactive observers see the new title
+        _docs.update { docs ->
+            docs.map { if (it.id == id) it.copy(title = title) else it }
+        }
+    }
+
+    override suspend fun delete(id: String) {
+        lastDeletedId = id
+        _docs.update { it.filter { doc -> doc.id != id } }
+    }
+
+    override suspend fun markAsSigned(id: String) {
+        lastSignedId = id
+        _docs.update { docs ->
+            docs.map { if (it.id == id) it.copy(status = com.scansign.app.core.model.DocumentStatus.SIGNED) else it }
+        }
+    }
+
+    override suspend fun save(
+        pdfUri: Uri,
+        pageUris: List<Uri>,
+        title: String,
+    ): Result<Document> = Result.failure(UnsupportedOperationException("Not used in tests"))
+}

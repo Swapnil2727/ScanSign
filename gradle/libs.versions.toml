@@ -1,5 +1,6 @@
 [versions]
 agp = "9.0.1"
+firebaseBom = "34.19.0"
 kotlin = "2.2.10"
 coreKtx = "1.17.0"
 lifecycleRuntimeKtx = "2.10.0"
@@ -24,6 +25,8 @@ accompanist = "0.36.0"
 roborazzi = "1.76.0"
 robolectric = "4.14.1"
 androidxTest = "1.6.1"
+googleServices = "4.5.0"
+firebaseCrashlyticsPlugin = "3.0.3"
 
 [libraries]
 # AndroidX
@@ -44,6 +47,10 @@ androidx-compose-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-te
 androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3" }
 androidx-compose-foundation = { group = "androidx.compose.foundation", name = "foundation" }
 androidx-compose-material-icons-extended = { group = "androidx.compose.material", name = "material-icons-extended" }
+
+firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebaseBom" }
+firebase-analytics = { module = "com.google.firebase:firebase-analytics" }
+firebase-crashlytics = { module = "com.google.firebase:firebase-crashlytics" }
 
 # Koin
 koin-core = { group = "io.insert-koin", name = "koin-core", version.ref = "koin" }
@@ -95,3 +102,5 @@ kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "ko
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 roborazzi = { id = "io.github.takahirom.roborazzi", version.ref = "roborazzi" }
+google-services = { id = "com.google.gms.google-services", version.ref = "googleServices" }
+firebase-crashlytics = { id = "com.google.firebase.crashlytics", version.ref = "firebaseCrashlyticsPlugin" }
