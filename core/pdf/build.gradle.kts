@@ -3,7 +3,7 @@ plugins {
 }
 
 android {
-    namespace = "com.spatel.scansign.core.pdf"
+    namespace = "com.scansign.app.core.pdf"
     compileSdk {
         version = release(36)
     }

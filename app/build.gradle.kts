@@ -3,16 +3,18 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.roborazzi)
+    alias(libs.plugins.google.services)
+    alias(libs.plugins.firebase.crashlytics)
 }
 
 android {
-    namespace = "com.spatel.scansign"
+    namespace = "com.scansign.app"
     compileSdk {
         version = release(36)
     }
 
     defaultConfig {
-        applicationId = "com.spatel.scansign"
+        applicationId = "com.scansign.app"
         minSdk = 29
         targetSdk = 36
         versionCode = 1
@@ -102,4 +104,7 @@ dependencies {
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.analytics)
+    implementation(libs.firebase.crashlytics)
 }

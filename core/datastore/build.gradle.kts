@@ -3,7 +3,7 @@ plugins {
 }
 
 android {
-    namespace = "com.spatel.scansign.core.datastore"
+    namespace = "com.scansign.app.core.datastore"
     compileSdk {
         version = release(36)
     }
