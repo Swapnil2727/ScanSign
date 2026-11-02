@@ -293,7 +293,7 @@ private fun Long.formatSize(): String = when {
 
 @ThemePreviews
 @Composable
-private fun SettingsPreview() {
+internal fun SettingsPreview() {
     ScanSignTheme(dynamicColor = false) {
         SettingsContent(
             uiState = SettingsUiState.Success(
@@ -310,7 +310,7 @@ private fun SettingsPreview() {
 
 @ThemePreviews
 @Composable
-private fun SettingsHighQualityDarkPreview() {
+internal fun SettingsHighQualityDarkPreview() {
     ScanSignTheme(darkTheme = true, dynamicColor = false) {
         SettingsContent(
             uiState = SettingsUiState.Success(

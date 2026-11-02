@@ -513,7 +513,7 @@ private val previewPages = listOf(
 
 @ThemePreviews
 @Composable
-private fun DocumentDetailContentPreview() {
+internal fun DocumentDetailContentPreview() {
     ScanSignTheme {
         DocumentDetailContent(
             uiState = DocumentDetailUiState.Success(previewDocument, previewPages),
@@ -529,7 +529,7 @@ private fun DocumentDetailContentPreview() {
 
 @ThemePreviews
 @Composable
-private fun DocumentDetailLoadingPreview() {
+internal fun DocumentDetailLoadingPreview() {
     ScanSignTheme {
         DocumentDetailContent(
             uiState = DocumentDetailUiState.Loading,
@@ -545,7 +545,7 @@ private fun DocumentDetailLoadingPreview() {
 
 @ThemePreviews
 @Composable
-private fun MetadataCardPreview() {
+internal fun MetadataCardPreview() {
     ScanSignTheme {
         MetadataCard(document = previewDocument)
     }
@@ -553,7 +553,7 @@ private fun MetadataCardPreview() {
 
 @ThemePreviews
 @Composable
-private fun RenameBottomSheetPreview() {
+internal fun RenameBottomSheetPreview() {
     ScanSignTheme {
         RenameBottomSheet(
             currentTitle = "Invoice March 2025",

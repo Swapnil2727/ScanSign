@@ -357,7 +357,7 @@ private fun TrustCard(page: Int) {
 
 @ThemePreviews
 @Composable
-private fun NameEntryStepPreview() {
+internal fun NameEntryStepPreview() {
     ScanSignTheme {
         NameEntryStep(
             nameInput = "Saumil",
@@ -370,7 +370,7 @@ private fun NameEntryStepPreview() {
 
 @ThemePreviews
 @Composable
-private fun NameEntryStepInvalidPreview() {
+internal fun NameEntryStepInvalidPreview() {
     ScanSignTheme {
         NameEntryStep(
             nameInput = "Sau",
@@ -384,7 +384,7 @@ private fun NameEntryStepInvalidPreview() {
 @OptIn(ExperimentalPagerApi::class)
 @ThemePreviews
 @Composable
-private fun TrustCardsStepPreview() {
+internal fun TrustCardsStepPreview() {
     ScanSignTheme {
         TrustCardsStep(onGetStarted = {})
     }

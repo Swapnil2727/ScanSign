@@ -565,7 +565,7 @@ private fun Long.formatDate(): String =
 
 @ThemePreviews
 @Composable
-private fun DrawTabPreview() {
+internal fun DrawTabPreview() {
     ScanSignTheme(dynamicColor = false) {
         DrawTab(
             completedStrokes = emptyList(),
@@ -585,7 +585,7 @@ private fun DrawTabPreview() {
 
 @ThemePreviews
 @Composable
-private fun ImageTabEmptyPreview() {
+internal fun ImageTabEmptyPreview() {
     ScanSignTheme(dynamicColor = false) {
         ImageTab(
             selectedImageUri = null,
@@ -595,3 +595,34 @@ private fun ImageTabEmptyPreview() {
         )
     }
 }
+
+@ThemePreviews
+@Composable
+internal fun SignerScreenPreview() {
+    ScanSignTheme(dynamicColor = false) {
+        SignerContent(
+            selectedTab = SignerTab.DRAW,
+            completedStrokes = emptyList(),
+            currentStroke = emptyList(),
+            selectedImageUri = null,
+            isSaving = false,
+            transparentBackground = false,
+            savedSignatures = listOf(
+                Signature("s1", "Official Signature", 0L, SignatureType.DRAWN, null)
+            ),
+            snackbarHostState = SnackbarHostState(),
+            onTabSelected = {},
+            onStrokeStart = {},
+            onStrokeMove = {},
+            onStrokeEnd = {},
+            onUndo = {},
+            onClear = {},
+            onSaveDrawn = { _, _, _ -> },
+            onTransparentBackgroundChange = {},
+            onImageSelected = {},
+            onSaveImage = {},
+            onDeleteSignature = {},
+        )
+    }
+}
+

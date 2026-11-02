@@ -117,7 +117,7 @@ private fun ScannerLoadingContent(modifier: Modifier = Modifier) {
 
 @ThemePreviews
 @Composable
-private fun ScannerScreenPreview() {
+internal fun ScannerScreenPreview() {
     ScanSignTheme(dynamicColor = false) {
         ScannerLoadingContent()
     }
@@ -125,7 +125,7 @@ private fun ScannerScreenPreview() {
 
 @ThemePreviews
 @Composable
-private fun ScannerErrorDialogPreview() {
+internal fun ScannerErrorDialogPreview() {
     ScanSignTheme(dynamicColor = false) {
         ScannerErrorDialog(onRetry = {}, onDismiss = {})
     }

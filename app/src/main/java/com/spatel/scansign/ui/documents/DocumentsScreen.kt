@@ -724,7 +724,7 @@ private fun computeInitials(name: String): String {
 
 @ThemePreviews
 @Composable
-private fun DocumentsMorningPreview() {
+internal fun DocumentsMorningPreview() {
     ScanSignTheme {
         DocumentsContent(
             userName = "Saumil Patel",
@@ -746,7 +746,7 @@ private fun DocumentsMorningPreview() {
 
 @ThemePreviews
 @Composable
-private fun DocumentsEmptyPreview() {
+internal fun DocumentsEmptyPreview() {
     ScanSignTheme {
         DocumentsContent(
             userName = "Steven Smith",
@@ -768,7 +768,7 @@ private fun DocumentsEmptyPreview() {
 
 @ThemePreviews
 @Composable
-private fun DocumentsSearchActivePreview() {
+internal fun DocumentsSearchActivePreview() {
     ScanSignTheme {
         DocumentsContent(
             userName = "Saumil Patel",
@@ -790,7 +790,7 @@ private fun DocumentsSearchActivePreview() {
 
 @ThemePreviews
 @Composable
-private fun DocumentsSearchNoResultsPreview() {
+internal fun DocumentsSearchNoResultsPreview() {
     ScanSignTheme {
         DocumentsContent(
             userName = "Saumil Patel",

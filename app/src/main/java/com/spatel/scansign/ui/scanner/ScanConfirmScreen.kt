@@ -183,7 +183,7 @@ private fun ScanConfirmContent(
 
 @ThemePreviews
 @Composable
-private fun ScanConfirmContentPreview() {
+internal fun ScanConfirmContentPreview() {
     ScanSignTheme(dynamicColor = false) {
         ScanConfirmContent(
             pageUris = emptyList(),
