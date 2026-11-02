@@ -11,16 +11,19 @@ import com.spatel.scansign.di.settingsModule
 import com.spatel.scansign.di.signerModule
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
+import org.koin.core.context.GlobalContext
 import org.koin.core.context.startKoin
 
 class ScanSignApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        startKoin {
-            androidLogger()
-            androidContext(this@ScanSignApplication)
-            modules(appModule, databaseModule, datastoreModule, scannerModule, documentsModule, settingsModule, signerModule, onboardingModule)
+        if (GlobalContext.getOrNull() == null) {
+            startKoin {
+                androidLogger()
+                androidContext(this@ScanSignApplication)
+                modules(appModule, databaseModule, datastoreModule, scannerModule, documentsModule, settingsModule, signerModule, onboardingModule)
+            }
         }
     }
 }

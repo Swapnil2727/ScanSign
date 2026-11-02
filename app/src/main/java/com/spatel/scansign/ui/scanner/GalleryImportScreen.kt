@@ -97,7 +97,7 @@ private fun GalleryImportLoadingContent(modifier: Modifier = Modifier) {
 
 @ThemePreviews
 @Composable
-private fun GalleryImportLoadingPreview() {
+internal fun GalleryImportLoadingPreview() {
     ScanSignTheme(dynamicColor = false) {
         GalleryImportLoadingContent()
     }
@@ -105,7 +105,7 @@ private fun GalleryImportLoadingPreview() {
 
 @ThemePreviews
 @Composable
-private fun GalleryImportErrorDialogPreview() {
+internal fun GalleryImportErrorDialogPreview() {
     ScanSignTheme(dynamicColor = false) {
         GalleryImportErrorDialog(
             message = "Failed to convert images: out of memory",

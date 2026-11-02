@@ -251,7 +251,7 @@ private val previewPages = listOf(
 
 @ThemePreviews
 @Composable
-private fun DocumentViewerContentPreview() {
+internal fun DocumentViewerContentPreview() {
     ScanSignTheme {
         DocumentViewerContent(
             title        = "Invoice March 2025",
@@ -266,7 +266,7 @@ private fun DocumentViewerContentPreview() {
 
 @ThemePreviews
 @Composable
-private fun DocumentViewerSinglePagePreview() {
+internal fun DocumentViewerSinglePagePreview() {
     ScanSignTheme {
         DocumentViewerContent(
             title        = "Single Page Doc",

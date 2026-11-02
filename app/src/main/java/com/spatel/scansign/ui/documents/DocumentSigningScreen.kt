@@ -459,7 +459,7 @@ private val previewSignatures = listOf(
 
 @ThemePreviews
 @Composable
-private fun DocumentSigningNoSignaturesPreview() {
+internal fun DocumentSigningNoSignaturesPreview() {
     ScanSignTheme {
         DocumentSigningContent(
             pageBitmap = null,
@@ -485,7 +485,7 @@ private fun DocumentSigningNoSignaturesPreview() {
 
 @ThemePreviews
 @Composable
-private fun DocumentSigningWithSignaturesPreview() {
+internal fun DocumentSigningWithSignaturesPreview() {
     ScanSignTheme {
         DocumentSigningContent(
             pageBitmap = null,
@@ -511,7 +511,7 @@ private fun DocumentSigningWithSignaturesPreview() {
 
 @ThemePreviews
 @Composable
-private fun DocumentSigningInProgressPreview() {
+internal fun DocumentSigningInProgressPreview() {
     ScanSignTheme {
         DocumentSigningContent(
             pageBitmap = null,
