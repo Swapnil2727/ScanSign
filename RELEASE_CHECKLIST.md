@@ -209,15 +209,15 @@ Currently `isMinifyEnabled = false` in `app/build.gradle.kts`. Before release:
   # Kotlin Serialization (Navigation routes)
   -keepattributes *Annotation*, InnerClasses
   -dontnote kotlinx.serialization.AnnotationsKt
-  -keep,includedescriptorclasses class com.spatel.scansign.**$$serializer { *; }
-  -keepclassmembers class com.spatel.scansign.** {
+  -keep,includedescriptorclasses class com.scansign.app.**$$serializer { *; }
+  -keepclassmembers class com.scansign.app.** {
       *** Companion;
   }
   ```
 
 ### 2.2 Version & Application ID
 
-- [ ] Confirm `applicationId = "com.spatel.scansign"` is your intended Play Store ID (cannot change after publish)
+- [ ] Confirm `applicationId = "com.scansign.app"` is your intended Play Store ID (cannot change after publish)
 - [ ] Set `versionCode = 1` and `versionName = "1.0.0"` (use semantic versioning)
 
 ### 2.3 Privacy Policy
